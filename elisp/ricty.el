@@ -1,32 +1,34 @@
 ;;; Rictyを等幅で使う
+(add-to-list 'default-frame-alist '(font . "ricty-16"))
+
 ;; thx http://tam5917.hatenablog.com/entry/20120915/1347688961
-(if window-system
-    (progn
-      (create-fontset-from-ascii-font
-       "Ricty:style=regular:spacing=0" nil "ricty")
-
-      (dolist (charset
-               '(unicode
-                 japanese-jisx0208
-                 japanese-jisx0208-1978
-                 japanese-jisx0212
-                 japanese-jisx0213-1
-                 japanese-jisx0213-2
-                 japanese-jisx0213-a
-                 japanese-jisx0213.2004-1
-                 katakana-jisx0201))
-        (set-fontset-font "fontset-ricty"
-                          charset
-                          (font-spec :family "Ricty" :size 16) ;16以外のサイズでは等幅にならない :-(
-                          nil 'prepend))
-
-      (setq default-frame-alist
-            (append (list
-                     '(font . "fontset-ricty")
-                     )
-                    default-frame-alist))
-      (set-face-attribute 'fixed-pitch nil :family "Ricty")
-      ))
+;;(if window-system
+;;    (progn
+;;      (create-fontset-from-ascii-font
+;;       "Ricty:style=regular:spacing=0" nil "ricty")
+;;
+;;      (dolist (charset
+;;               '(unicode
+;;                 japanese-jisx0208
+;;                 japanese-jisx0208-1978
+;;                 japanese-jisx0212
+;;                 japanese-jisx0213-1
+;;                 japanese-jisx0213-2
+;;                 japanese-jisx0213-a
+;;                 japanese-jisx0213.2004-1
+;;                 katakana-jisx0201))
+;;        (set-fontset-font "fontset-ricty"
+;;                          charset
+;;                          (font-spec :family "Ricty" :size 16) ;16以外のサイズでは等幅にならない :-(
+;;                          nil 'prepend))
+;;
+;;      (setq default-frame-alist
+;;            (append (list
+;;                     '(font . "fontset-ricty")
+;;                     )
+;;                    default-frame-alist))
+;;      (set-face-attribute 'fixed-pitch nil :family "Ricty")
+;;      ))
 
 ;;; Rictyの準備の仕方
 ;; thx Rictyなるものがあるらしい | cozy attic

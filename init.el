@@ -1,12 +1,24 @@
 ;;; init.el by jidaikobo-shibata
-;; thx 『Emacs実践入門』
-;; thx http://rubikitch.com
+;;; thx 『Emacs実践入門』
+;;; thx http://rubikitch.com
 
 ;;; ------------------------------------------------------------
-;;; usage: emacsのインストール
-;; sudo port selfupdate
-;; sudo port install emacs-app +patches
-;; open /Applications/MacPorts/Emacs.app
+;;; usage: emacsのインストール（要X-code Command Line Tools）
+;;; thx http://masutaka.net/chalow/2015-04-12-1.html
+;; curl -LO http://ftp.gnu.org/pub/gnu/emacs/emacs-24.5.tar.xz
+;; curl -LO ftp://ftp.math.s.chiba-u.ac.jp/emacs/emacs-24.5-mac-5.9.tar.gz
+;; tar xfJ emacs-24.5.tar.xz
+;; tar xfz emacs-24.5-mac-5.9.tar.gz
+;; cd emacs-24.5
+;; patch -p 1 < ../emacs-24.5-mac-5.9/patch-mac
+;; cp -r ../emacs-24.5-mac-5.9/mac mac
+;; cp ../emacs-24.5-mac-5.9/src/* src
+;; cp ../emacs-24.5-mac-5.9/lisp/term/mac-win.el lisp/term
+;; \cp nextstep/Cocoa/Emacs.base/Contents/Resources/Emacs.icns mac/Emacs.app/Contents/Resources/Emacs.icns
+;; ./configure --prefix=$HOME/opt/emacs-24.5 --with-mac --without-x
+;; make
+;; make GZIP_PROG='' install
+;; cp -r mac/Emacs.app ~/Applications
 
 ;;; ------------------------------------------------------------
 ;;; usage: init.elの反映
@@ -14,14 +26,14 @@
 
 ;;; ------------------------------------------------------------
 ;;; usage: 利用前の準備
-;; このinit.elを~/.emacs.dに入れる前に、以下手順を踏んでおくこと。
-;; @ terminal
+;;; このinit.elを~/.emacs.dに入れる前に、以下手順を踏んでおくこと。
+;;; @ terminal
 ;; mkdir -p ~/.emacs.d/elisp
 ;; cd ~/.emacs.d/elisp
 ;; curl -0 http://www.emacswiki.org/emacs/download/auto-install.el
-;; @ emacs
-;; S式はC-x C-eで反映すること
-;; 下記コマンド類はM-;でコメントを外してからやるとよい
+;;; @ emacs
+;;; S式はC-x C-eで反映すること
+;;; 下記コマンド類はM-;でコメントを外してからやるとよい
 ;; M-x byte-compile-file RET ~/.emacs.d/elisp/auto-install.el RET
 ;; (add-to-list 'load-path "~/.emacs.d/elisp")
 ;; (require 'auto-install)
@@ -49,13 +61,6 @@
 ;; M-x package-install RET point-undo RET
 ;; M-x package-install RET multiple-cursors RET
 ;; M-x package-install RET smartrep RET
-;;
-;; なぜかM-x auto-install-from-urlが効かないので
-;; https://raw.githubusercontent.com/ongaeshi/duplicate-thing/master/duplicate-thing.el
-;; の内容をコピーして、
-;; C-x C-f ~/.emacs.d/elisp/duplicate-thing.el
-;; に貼り付ける。
-;; M-x byte-compile-file RET ~/.emacs.d/elisp/duplicate-thing.el RET
 
 ;;; ------------------------------------------------------------
 ;;; package類のロード等
@@ -115,10 +120,9 @@
 ;; テンプレート編集時のモード
 (require 'web-mode)
 
-;;; duplicate-thing
-;; http://ongaeshi.hatenablog.com/entry/20120321/1332329935
+;;; duplicate-region
 ;; 行／選択範囲の複製 (cmd+d)
-(require 'duplicate-thing)
+(require 'duplicate-region)
 
 ;;; cursor-chg
 ;; カーソルの形状を変更
@@ -164,56 +168,42 @@
 ;;; ------------------------------------------------------------
 ;;; キーバインド登録
 
-;; cmd+[cursor]関係
+;;; mac likeなcmd関係
 ;; thx http://d.hatena.ne.jp/gan2/20080109/1199887209
-(define-key global-map [s-up] 'beginning-of-buffer)
-(define-key global-map [s-down] 'end-of-buffer)
-(define-key global-map [s-left] 'beginning-of-line)
-(define-key global-map [s-right] 'end-of-line)
+;; thx http://www.unixuser.org/~euske/doc/emacsref/#file
+(global-set-key (kbd "s-c") 'kill-ring-save) ; copy (cmd+c)
+(global-set-key (kbd "s-x") 'kill-region) ; cut (cmd+x)
+(global-set-key (kbd "s-v") 'yank) ; paste (cmd+v)
+(global-set-key (kbd "s-s") 'save-buffer) ; save (cmd+s)
+(global-set-key (kbd "s-S") 'write-file) ; save as (cmd+shift+s)
+(global-set-key (kbd "s-o") 'find-file) ; open (cmd+o)
+(global-set-key (kbd "s-f") 'isearch-forward) ; search (cmd+f)
+(global-set-key (kbd "s-g") 'isearch-forward) ; search forward (cmd+g)
+(global-set-key (kbd "s-G") 'isearch-backward) ; search backword (cmd+shift+g)
+(global-set-key (kbd "s-z") 'undo-tree-undo) ; undo (cmd+z)
+(global-set-key (kbd "s-Z") 'undo-tree-redo) ; redo (cmd+shift+z)
+(global-set-key (kbd "s-+") 'text-scale-increase) ; resize increase (cmd++)
+(global-set-key [s-kp-add] 'text-scale-increase) ; resize increase (cmd++)
+(global-set-key (kbd "s--") 'text-scale-decrease) ; resize decrease (cmd+-)
+(global-set-key [s-kp-subtract] 'text-scale-decrease) ; resize decrease (cmd+-)
+;; (define-key global-map [s-kp-equal] (text-scale-mode 0))
+;; (define-key global-map (kbd "s-=") (text-scale-mode 0))
+;; (define-key global-map [s-kp-0] (text-scale-mode 0))
+;; (define-key global-map (kbd "s-0") (text-scale-mode 0))
+(global-set-key (kbd "s-q") 'save-buffers-kill-emacs) ; quit (cmd+q)
+(define-key global-map [s-up] 'beginning-of-buffer) ; cmd+up
+(define-key global-map [s-down] 'end-of-buffer) ; cmd+down
+(define-key global-map [s-left] 'beginning-of-line) ; cmd+left
+(define-key global-map [s-right] 'end-of-line) ; cmd+right
 
-;; temporary
-(define-key global-map [M-up] 'previous-line)
-(define-key global-map [M-down] 'next-line)
-
-;; C-aで、開始場所と先頭をトグル
-;; thx http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
-(defun my-goto-line-beginning-or-indent (&optional $position)
-  (interactive)
-  (or $position (setq $position (point)))
-  (let (($starting-position (progn (back-to-indentation) (point))))
-    (if (eq $starting-position $position)
-      (move-beginning-of-line 1))))
-(global-set-key (kbd "C-a") 'my-goto-line-beginning-or-indent)
-
-;; Shift+Returnで<br />を入力
-(define-key global-map [S-return] "<br />")
-
-;; opt+¥でバックスラッシュを入力
-(define-key global-map (kbd "M-¥") "\\")
-
-;; escでM-g
+;;; escでM-g
 ;; http://emacswiki.org/emacs/CancelingInEmacs
 (setq normal-escape-enabled t)
 (define-key isearch-mode-map [escape] 'isearch-abort) ; isearch
-(define-key isearch-mode-map "\e" 'isearch-abort)     ; \e seems to work better for terminals
-(global-set-key [escape] 'keyboard-escape-quit)       ; everywhere else
+(define-key isearch-mode-map "\e" 'isearch-abort) ; \e seems to work better for terminals
+(global-set-key [escape] 'keyboard-escape-quit) ; everywhere else
 
-;; ウィンドウ切り替え (M-tab)
-(define-key global-map [M-tab] 'other-window)
-
-;; M-g で指定行へジャンプ
-(global-set-key "\M-g" 'goto-line)
-
-;; anything
-(define-key global-map (kbd "C-;") 'anything)
-
-;; duplicate-thing
-(define-key global-map (kbd "s-d") 'duplicate-thing)
-
-;; mac like redo (cmd+shift+z)
-(define-key global-map (kbd "s-Z") 'undo-tree-redo)
-
-;; mac like close window (cmd+w)
+;;; mac like close window (cmd+w)
 ;; cmd+wで、開いているウィンドウを閉じる。最後のバッファなら、バッファを閉じる
 (defun contexual-close-window ()
 	"mac like close window (cmd+w)."
@@ -232,6 +222,35 @@
 				(t (split-window-vertically))))
 (define-key global-map (kbd "s-n") 'create-new-window-intaractive)
 
+;; temporary
+(define-key global-map [M-up] 'previous-line)
+(define-key global-map [M-down] 'next-line)
+
+;;; C-aで、開始場所と先頭をトグル
+;; thx http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
+(defun my-goto-line-beginning-or-indent (&optional $position)
+  (interactive)
+  (or $position (setq $position (point)))
+  (let (($starting-position (progn (back-to-indentation) (point))))
+    (if (eq $starting-position $position)
+      (move-beginning-of-line 1))))
+(global-set-key (kbd "C-a") 'my-goto-line-beginning-or-indent)
+
+;;; Shift+Returnで<br />を入力
+(define-key global-map [S-return] "<br />")
+
+;;; opt+¥でバックスラッシュを入力
+(define-key global-map (kbd "M-¥") "\\")
+
+;;; ウィンドウ切り替え (M-tab)
+(define-key global-map [M-tab] 'other-window)
+
+;;; M-g で指定行へジャンプ
+(global-set-key "\M-g" 'goto-line)
+
+;;; anything
+(define-key global-map (kbd "C-;") 'anything)
+
 ;; create shell another at window
 ;; thx http://qiita.com/7gano@github/items/6afbe24a00c4ee4a634b
 (defun create-shell-window-vertically ()
@@ -246,17 +265,6 @@
 ;; opt+cmd+[left|right]でカーソル履歴移動
 (define-key global-map [M-s-left] 'point-undo)
 (define-key global-map [M-s-right] 'point-redo)
-
-;; mac like resize
-;; cmd+[+|-|=|0]で表示リサイズ
-(define-key global-map (kbd "s-+") 'text-scale-increase)
-(define-key global-map [s-kp-add] 'text-scale-increase)
-(define-key global-map (kbd "s--") 'text-scale-decrease)
-(define-key global-map [s-kp-subtract] 'text-scale-decrease)
-;; (define-key global-map [s-kp-equal] (text-scale-mode 0))
-;; (define-key global-map (kbd "s-=") (text-scale-mode 0))
-;; (define-key global-map [s-kp-0] (text-scale-mode 0))
-;; (define-key global-map (kbd "s-0") (text-scale-mode 0))
 
 ;; multiple-cursor and smartrep
 ;; 複数箇所選択と編集
@@ -298,8 +306,7 @@
 ;;; ------------------------------------------------------------
 ;;; ほか諸設定
 
-;; Rictyを等幅で使う
-;; ~/.emacs.d/elisp/ricty.elc
+;; Rictyを等幅で使う（ウェブ上で散見される記事と違い）
 (load "ricty")
 
 ;; リージョンを上書きできるようにする
@@ -309,7 +316,8 @@
 (setq default-input-method "MacOSX")
 
 ;; CmdをMetaにしない
-(setq mac-command-key-is-meta nil)
+(setq mac-pass-command-to-system nil)
+(setq mac-command-modifier 'super)
 
 ;; optキーがMeta
 (setq mac-option-modifier 'meta)
@@ -318,13 +326,13 @@
 ;; thx http://qiita.com/catatsuy/items/c5fa34ead92d496b8a51
 
 ;; emacs 起動時は英数モードから始める
-(add-hook 'after-init-hook 'mac-change-language-to-us)
+;(add-hook 'after-init-hook 'mac-change-language-to-us)
 
 ;; minibuffer 内は英数モードにする
-(add-hook 'minibuffer-setup-hook 'mac-change-language-to-us)
+;(add-hook 'minibuffer-setup-hook 'mac-change-language-to-us)
 
 ;; [migemo]isearch のとき IME を英数モードにする
-(add-hook 'isearch-mode-hook 'mac-change-language-to-us)
+;(add-hook 'isearch-mode-hook 'mac-change-language-to-us)
 
 ;; ドラッグアンドドロップでファイルを開く＋あたらしいウィンドウでひらかない
 (define-key global-map [ns-drag-file] 'ns-find-file)
@@ -460,14 +468,6 @@
 
 ;;s-wrap
 
-;; (defun my-command-test () 
-;; 	(interactive) 
-;; 	(let (selected) 
-;; 		;; (setq str (read-string "String: "))
-;; 		(setq selected (buffer-substring 
-;; 									(region-beginning) (region-end)))
-;; 		(insert selected "\n")))
-;; thx http://dev.ariel-networks.com/articles/emacs/part3/
 (defun my-command-test () 
 	(interactive) 
 	(let (src)
@@ -489,5 +489,6 @@
 			(insert (car lines) "\n")
 			(setq lines (cdr lines)))))
 
-(define-key global-map (kbd "s-1") 'my-command-test1)
+;(define-key global-map (kbd "s-2") 'my-command-test1)
+
 
