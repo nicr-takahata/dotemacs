@@ -212,13 +212,16 @@
 
 ;;; create-temporary-buffer
 ;; あたらしい空のバッファを作る (cmd+t)
-(load "create-temporary-buffer")
+(defun create-temporary-buffer ()
+  (interactive)
+  (switch-to-buffer (generate-new-buffer "*temp*")))
+(define-key global-map (kbd "s-t") 'create-temporary-buffer) ; (cmd+t)
 
 ;; 前後のバッファ
 ;; http://www.jaist.ac.jp/~n-yoshi/tips/elisp_tips.html#buffer
 (defvar my-ignore-blst             ; 移動の際に無視するバッファのリスト
   '("*Help*" "*Compile-Log*" "*Mew completions*" "*Completions*"
-    "*Shell Command Output*" "*Apropos*" "*Buffer List*"))
+    "*Shell Command Output*" "*Apropos*" "*Buffer List*" "*Messages" "*anything*"))
 (defvar my-visible-blst nil)       ; 移動開始時の buffer list を保存
 (defvar my-bslen 15)               ; buffer list 中の buffer name の最大長
 (defvar my-blist-display-time 2)   ; buffer list の表示時間
@@ -226,6 +229,7 @@
   '((t (:foreground "wheat" :underline t))) nil)
 
 (defun my-visible-buffers (blst)
+	(interactive)
   (if (eq blst nil) '()
     (let ((bufn (buffer-name (car blst))))
       (if (or (= (aref bufn 0) ? ) (member bufn my-ignore-blst))
@@ -234,6 +238,7 @@
         (cons (car blst) (my-visible-buffers (cdr blst)))))))
 
 (defun my-show-buffer-list (prompt spliter)
+	(interactive)
   (let* ((len (string-width prompt))
          (str (mapconcat
                (lambda (buf)
@@ -253,6 +258,7 @@
       (when (sit-for my-blist-display-time) (message nil)))))
 
 (defun my-operate-buffer (pos)
+	(interactive)
   (unless (window-minibuffer-p (selected-window));; ミニバッファ以外で
     (unless (eq last-command 'my-operate-buffer)
       ;; 直前にバッファを切り替えてなければバッファリストを更新
@@ -269,12 +275,13 @@
 ;;; フレーム設定ウィンドウ操作
 
 ;;; mac like close window (cmd+w)
-;; cmd+wで、開いているウィンドウを閉じる。最後のバッファなら、バッファを閉じる
+;; cmd+wで、開いているウィンドウを閉じる。単一のバッファなら、バッファを閉じる
 (defun contexual-close-window ()
 	"mac like close window (cmd+w)."
 	(interactive)
 	(if (one-window-p)
-			(kill-buffer)
+			(progn (call-interactively 'write-file)
+						 (kill-buffer))
 		(delete-window)))
 (global-set-key (kbd "s-w") 'contexual-close-window)
 
@@ -287,7 +294,7 @@
 				(t (split-window-vertically))))
 (global-set-key (kbd "s-n") 'create-new-window-intaractive)
 
-;;; フレームの大きさと色 (cmd+shift+w で、なにかの拍子にウィンドウサイズが割っても戻せる)
+;;; フレームの大きさと色を変更 (cmd+shift+w)
 (defun resize-selected-frame ()
 	"resize frame to jidaikobo's default"
 	(interactive)
@@ -439,8 +446,24 @@
 (defun span-tag ()
 	(interactive)
 	(any-html-tag "span"))
-(global-set-key (kbd "s-M-s") 'span-tag) ; cmd+shift+s
+(global-set-key (kbd "s-M-p") 'span-tag) ; cmd+shift+p
 
+;;; 全角数字を半角数字に
+(defun convert-to-single-byte-number ()
+  "Convert multi-byte numbers in region into single-byte number"
+  (interactive)
+  (replace-strings-in-region-by-list
+   '(("１" . "1")
+     ("２" . "2")
+     ("３" . "3")
+     ("４" . "4")
+     ("５" . "5")
+     ("６" . "6")
+     ("７" . "7")
+     ("８" . "8")
+     ("９" . "9")
+     ("０" . "0"))))
+(global-set-key (kbd "s-u") 'convert-to-single-byte-number)
 
 ;;; ------------------------------------------------------------
 ;;; Emacs操作
@@ -595,7 +618,6 @@
 ;(setq indent-line-function 'indent-relative-maybe)
 
 ;;; 行カーソル
-;; thx http://rubikitch.com/2015/05/14/global-hl-line-mode-timer/
 (setq hl-line-face 'underline)
 (global-hl-line-mode)
 ;; (require 'hl-line)
