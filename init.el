@@ -5,15 +5,16 @@
 ;;; ------------------------------------------------------------
 ;;; usage: emacsのインストール（要X-code Command Line Tools）
 ;;; thx http://masutaka.net/chalow/2015-04-12-1.html
+;;; ftp://ftp.math.s.chiba-u.ac.jp/emacsを確認して、あたらしいパッチの存在を確認すると良い
 ;; curl -LO http://ftp.gnu.org/pub/gnu/emacs/emacs-24.5.tar.xz
-;; curl -LO ftp://ftp.math.s.chiba-u.ac.jp/emacs/emacs-24.5-mac-5.9.tar.gz
+;; curl -LO ftp://ftp.math.s.chiba-u.ac.jp/emacs/emacs-24.5-mac-5.11.tar.gz
 ;; tar xfJ emacs-24.5.tar.xz
-;; tar xfz emacs-24.5-mac-5.9.tar.gz
+;; tar xfz emacs-24.5-mac-5.11.tar.gz
 ;; cd emacs-24.5
-;; patch -p 1 < ../emacs-24.5-mac-5.9/patch-mac
-;; cp -r ../emacs-24.5-mac-5.9/mac mac
-;; cp ../emacs-24.5-mac-5.9/src/* src
-;; cp ../emacs-24.5-mac-5.9/lisp/term/mac-win.el lisp/term
+;; patch -p 1 < ../emacs-24.5-mac-5.11/patch-mac
+;; cp -r ../emacs-24.5-mac-5.11/mac mac
+;; cp ../emacs-24.5-mac-5.11/src/* src
+;; cp ../emacs-24.5-mac-5.11/lisp/term/mac-win.el lisp/term
 ;; \cp nextstep/Cocoa/Emacs.base/Contents/Resources/Emacs.icns mac/Emacs.app/Contents/Resources/Emacs.icns
 ;; ./configure --prefix=$HOME/opt/emacs-24.5 --with-mac --without-x
 ;; make
@@ -161,16 +162,13 @@
 (setq auto-async-byte-compile-exclude-files-regexp "init.el")
 (add-hook 'emacs-lisp-mode-hook 'enable-auto-async-byte-compile-mode)
 
-;;; create-temporary-buffer
-;; あたらしい空のバッファを作る (cmd+t)
-(load "create-temporary-buffer")
-
 ;;; ------------------------------------------------------------
 ;;; キーバインド登録
 
 ;;; mac likeなcmd関係
 ;; thx http://d.hatena.ne.jp/gan2/20080109/1199887209
 ;; thx http://www.unixuser.org/~euske/doc/emacsref/#file
+(global-set-key (kbd "s-a") 'mark-whole-buffer) ; select all (cmd+a)
 (global-set-key (kbd "s-c") 'kill-ring-save) ; copy (cmd+c)
 (global-set-key (kbd "s-x") 'kill-region) ; cut (cmd+x)
 (global-set-key (kbd "s-v") 'yank) ; paste (cmd+v)
@@ -178,23 +176,25 @@
 (global-set-key (kbd "s-S") 'write-file) ; save as (cmd+shift+s)
 (global-set-key (kbd "s-o") 'find-file) ; open (cmd+o)
 (global-set-key (kbd "s-f") 'isearch-forward) ; search (cmd+f)
-(global-set-key (kbd "s-g") 'isearch-forward) ; search forward (cmd+g)
-(global-set-key (kbd "s-G") 'isearch-backward) ; search backword (cmd+shift+g)
+(global-set-key (kbd "s-g") 'isearch-repeat-forward) ; search forward (cmd+g)
+(global-set-key (kbd "s-G") 'isearch-repeat-backward) ; search backword (cmd+shift+g)
+(global-set-key (kbd "s-e") 'isearch-yank-x-selection) ; set search word (cmd+e)
+(global-set-key (kbd "C-r") 'isearch-toggle-regexp) ; toggle regrex at search (c-s)
 (global-set-key (kbd "s-z") 'undo-tree-undo) ; undo (cmd+z)
 (global-set-key (kbd "s-Z") 'undo-tree-redo) ; redo (cmd+shift+z)
 (global-set-key (kbd "s-+") 'text-scale-increase) ; resize increase (cmd++)
 (global-set-key [s-kp-add] 'text-scale-increase) ; resize increase (cmd++)
 (global-set-key (kbd "s--") 'text-scale-decrease) ; resize decrease (cmd+-)
 (global-set-key [s-kp-subtract] 'text-scale-decrease) ; resize decrease (cmd+-)
-;; (define-key global-map [s-kp-equal] (text-scale-mode 0))
-;; (define-key global-map (kbd "s-=") (text-scale-mode 0))
-;; (define-key global-map [s-kp-0] (text-scale-mode 0))
-;; (define-key global-map (kbd "s-0") (text-scale-mode 0))
+;; (global-set-key [s-kp-equal] (text-scale-mode 0))
+;; (global-set-key (kbd "s-=") (text-scale-mode 0))
+;; (global-set-key [s-kp-0] (text-scale-mode 0))
+;; (global-set-key (kbd "s-0") (text-scale-mode 0))
 (global-set-key (kbd "s-q") 'save-buffers-kill-emacs) ; quit (cmd+q)
-(define-key global-map [s-up] 'beginning-of-buffer) ; cmd+up
-(define-key global-map [s-down] 'end-of-buffer) ; cmd+down
-(define-key global-map [s-left] 'beginning-of-line) ; cmd+left
-(define-key global-map [s-right] 'end-of-line) ; cmd+right
+(global-set-key [s-up] 'beginning-of-buffer) ; cmd+up
+(global-set-key [s-down] 'end-of-buffer) ; cmd+down
+(global-set-key [s-left] 'beginning-of-line) ; cmd+left
+(global-set-key [s-right] 'end-of-line) ; cmd+right
 
 ;;; escでM-g
 ;; http://emacswiki.org/emacs/CancelingInEmacs
@@ -203,28 +203,250 @@
 (define-key isearch-mode-map "\e" 'isearch-abort) ; \e seems to work better for terminals
 (global-set-key [escape] 'keyboard-escape-quit) ; everywhere else
 
+;;; temporary
+(global-set-key [M-up] 'previous-line)
+(define-key global-map [M-down] 'next-line)
+
+;;; ------------------------------------------------------------
+;;;バッファ操作
+
+;;; create-temporary-buffer
+;; あたらしい空のバッファを作る (cmd+t)
+(load "create-temporary-buffer")
+
+;; 前後のバッファ
+;; http://www.jaist.ac.jp/~n-yoshi/tips/elisp_tips.html#buffer
+(defvar my-ignore-blst             ; 移動の際に無視するバッファのリスト
+  '("*Help*" "*Compile-Log*" "*Mew completions*" "*Completions*"
+    "*Shell Command Output*" "*Apropos*" "*Buffer List*"))
+(defvar my-visible-blst nil)       ; 移動開始時の buffer list を保存
+(defvar my-bslen 15)               ; buffer list 中の buffer name の最大長
+(defvar my-blist-display-time 2)   ; buffer list の表示時間
+(defface my-cbface                 ; buffer list 中で current buffer を示す face
+  '((t (:foreground "wheat" :underline t))) nil)
+
+(defun my-visible-buffers (blst)
+  (if (eq blst nil) '()
+    (let ((bufn (buffer-name (car blst))))
+      (if (or (= (aref bufn 0) ? ) (member bufn my-ignore-blst))
+          ;; ミニバッファと無視するバッファには移動しない
+          (my-visible-buffers (cdr blst))
+        (cons (car blst) (my-visible-buffers (cdr blst)))))))
+
+(defun my-show-buffer-list (prompt spliter)
+  (let* ((len (string-width prompt))
+         (str (mapconcat
+               (lambda (buf)
+                 (let ((bs (copy-sequence (buffer-name buf))))
+                   (when (> (string-width bs) my-bslen) ;; 切り詰め 
+                     (setq bs (concat (substring bs 0 (- my-bslen 2)) "..")))
+                   (setq len (+ len (string-width (concat bs spliter))))
+                   (when (eq buf (current-buffer)) ;; 現在のバッファは強調表示
+                     (put-text-property 0 (length bs) 'face 'my-cbface bs))
+                   (cond ((>= len (frame-width)) ;; frame 幅で適宜改行
+                          (setq len (+ (string-width (concat prompt bs spliter))))
+                          (concat "\n" (make-string (string-width prompt) ? ) bs))
+                         (t bs))))
+               my-visible-blst spliter)))
+    (let (message-log-max)
+      (message "%s" (concat prompt str))
+      (when (sit-for my-blist-display-time) (message nil)))))
+
+(defun my-operate-buffer (pos)
+  (unless (window-minibuffer-p (selected-window));; ミニバッファ以外で
+    (unless (eq last-command 'my-operate-buffer)
+      ;; 直前にバッファを切り替えてなければバッファリストを更新
+      (setq my-visible-blst (my-visible-buffers (buffer-list))))
+    (let* ((blst (if pos my-visible-blst (reverse my-visible-blst))))
+      (switch-to-buffer (or (cadr (memq (current-buffer) blst)) (car blst))))
+    (my-show-buffer-list (if pos "[-->] " "[<--] ") (if pos " > "  " < " )))
+(setq this-command 'my-operate-buffer))
+
+(global-set-key [M-s-left] (lambda () (interactive) (my-operate-buffer nil)))
+(global-set-key [M-s-right] (lambda () (interactive) (my-operate-buffer t)))
+
+;;; ------------------------------------------------------------
+;;; フレーム設定ウィンドウ操作
+
 ;;; mac like close window (cmd+w)
 ;; cmd+wで、開いているウィンドウを閉じる。最後のバッファなら、バッファを閉じる
 (defun contexual-close-window ()
 	"mac like close window (cmd+w)."
-  (interactive)
+	(interactive)
 	(if (one-window-p)
 			(kill-buffer)
-		(kill-buffer-and-window)))
-(define-key global-map (kbd "s-w") 'contexual-close-window)
+		(delete-window)))
+(global-set-key (kbd "s-w") 'contexual-close-window)
 
-;; mac like new window (cmd+n)
+;;; mac like new window (cmd+n)
 ;; cmd+n でウィンドウを増やす。分割方法は対話式
 (defun create-new-window-intaractive (act)
 	"mac like new window (cmd+n)."
   (interactive "nchoose (holizntal:1, vertical:2):")
 	(cond ((eq act 2) (split-window-horizontally))
 				(t (split-window-vertically))))
-(define-key global-map (kbd "s-n") 'create-new-window-intaractive)
+(global-set-key (kbd "s-n") 'create-new-window-intaractive)
 
-;; temporary
-(define-key global-map [M-up] 'previous-line)
-(define-key global-map [M-down] 'next-line)
+;;; フレームの大きさと色 (cmd+shift+w で、なにかの拍子にウィンドウサイズが割っても戻せる)
+(defun resize-selected-frame ()
+	"resize frame to jidaikobo's default"
+	(interactive)
+	(set-frame-position  (selected-frame) 15 0)
+	(set-frame-size (selected-frame) 215 55))
+(global-set-key (kbd "s-W") 'resize-selected-frame)
+
+;;; フレーム初期値
+(add-to-list 'default-frame-alist '(alpha . (1.00 1.00)))
+(add-to-list 'default-frame-alist '(width . 215))
+(add-to-list 'default-frame-alist '(height . 55))
+(add-to-list 'default-frame-alist '(top . 0))
+(add-to-list 'default-frame-alist '(left . 15))
+(add-to-list 'default-frame-alist '(font . "ricty-16"))
+(add-to-list 'default-frame-alist '(background-color . "black"))
+(add-to-list 'default-frame-alist '(foreground-color . "white"))
+(add-to-list 'default-frame-alist '(cursor-color . "gray"))
+
+;;; 新規フレーム作成 (cmd+shift+n)
+(defun create-new-frame ()
+	(interactive)
+	(switch-to-buffer-other-frame "*new1*")
+	;; あたらしいフレームでも行番号表示を維持したいが、うまくいかない？
+	(show-line-number))
+(global-set-key (kbd "s-N") 'create-new-frame)
+(add-hook 'after-make-frame-functions 'show-line-number)
+
+;;; 行番号を表示する
+;; 表示切替はM-x wb-line-number-toggleと入力。
+(defun show-line-number ()
+	(interactive)
+	(require 'linum)
+	(global-linum-mode t)
+	(setq linum-format "%5d: "))
+(show-line-number)
+
+;;; ------------------------------------------------------------
+;;; 文字入力
+
+;;; opt+¥でバックスラッシュを入力
+(global-set-key (kbd "M-¥") "\\")
+
+;;; ------------------------------------------------------------
+;;; 時代工房Jedit Xの慣習系
+;; thx http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
+
+;;; M-g or cmd+opt+j で指定行へジャンプ
+(global-set-key "\M-g" 'goto-line)
+(global-set-key (kbd "M-s-j") 'goto-line)
+
+;;; 選択範囲を1行にする
+(defun join-multi-lines-to-one ()
+  (interactive)
+  (replace-strings-in-region-by-list
+   '(("\\(\n\\s-*\\)+" . ""))))
+(global-set-key [s-kp-divide] 'join-multi-lines-to-one) ; cmd+/
+(global-set-key (kbd "s-/") 'join-multi-lines-to-one) ; cmd+/
+
+;;; Shift+Returnで<br />を入力
+(global-set-key [S-return] "<br />")
+
+;; HTML:タグとタグの間、またはタグ内を一気に選択
+(defun region-angle-brackets ()
+  (interactive)
+  (let ($pt)
+    (skip-chars-backward "^<>")
+    (setq $pt (point))
+    (skip-chars-forward "^<>")
+    (set-mark $pt)))
+(global-set-key (kbd "s-A") 'region-angle-brackets) ; cmd+shift+a
+
+;; 任意のタグ
+(defun any-html-tag ($tag)
+  (interactive "sTag: ")
+	(cond
+	 ;; input
+	 ((string-equal $tag "input") (message "input"))
+	 ;; table
+	 ((string-equal $tag "table") 
+		(setq lines (s-split "" (buffer-substring 
+															 (region-beginning) (region-end))))
+		(setq str "")
+		(while lines
+			(setq str (concat str (car lines)) "\n")
+			(setq lines (cdr lines)))
+;;		(message str)
+
+;;		(setq lines (concat "<table>\n" lines "</table>"))
+;;		(insert lines)
+)
+		;; (setq lines (s-split "" (buffer-substring 
+		;; 							(region-beginning) (region-end))))
+		;; (while lines
+		;; 	(insert "res: ")
+		;; 	(insert (car lines) "\n")
+		;; 	(setq lines (cdr lines))))
+	 ;; singular tags
+	 ((find $tag '("hr" "br") :test #'string=) (insert (concat "<" $tag " />")))
+	 ;; wrapper tags
+	 (t (if (and mark-active transient-mark-mode)
+      (shell-command-on-region
+       (region-beginning) (region-end)
+       (concat "perl -0 -p -w -e \'"
+               "s/^([^\\S\\r\\n]*)(\\S.*?)[^\\S\\r\\n]*$/$1<"
+               $tag ">$2<\\/" $tag ">/gm\'")
+       nil t))))
+)
+(global-set-key (kbd "s-M-v") 'any-html-tag) ; cmd+shift+v
+
+;;; headings
+(defun h1-tag ()
+	(interactive)
+	(any-html-tag "h1"))
+(defun h2-tag ()
+	(interactive)
+	(any-html-tag "h2"))
+(defun h3-tag ()
+	(interactive)
+	(any-html-tag "h3"))
+(defun h4-tag ()
+	(interactive)
+	(any-html-tag "h4"))
+(defun h5-tag ()
+	(interactive)
+	(any-html-tag "h5"))
+(defun h6-tag ()
+	(interactive)
+	(any-html-tag "h6"))
+(global-set-key (kbd "s-M-1") 'h1-tag) ; cmd+shift+1
+(global-set-key (kbd "s-M-2") 'h2-tag) ; cmd+shift+2
+(global-set-key (kbd "s-M-3") 'h3-tag) ; cmd+shift+3
+(global-set-key (kbd "s-M-4") 'h4-tag) ; cmd+shift+4
+(global-set-key (kbd "s-M-5") 'h5-tag) ; cmd+shift+5
+(global-set-key (kbd "s-M-6") 'h6-tag) ; cmd+shift+6
+
+;;; strong
+(defun strong-tag ()
+	(interactive)
+	(any-html-tag "strong"))
+(global-set-key (kbd "s-M-g") 'strong-tag) ; cmd+shift+g
+
+;;; span
+(defun span-tag ()
+	(interactive)
+	(any-html-tag "span"))
+(global-set-key (kbd "s-M-s") 'span-tag) ; cmd+shift+s
+
+;;; p
+(defun span-tag ()
+	(interactive)
+	(any-html-tag "span"))
+(global-set-key (kbd "s-M-s") 'span-tag) ; cmd+shift+s
+
+
+;;; ------------------------------------------------------------
+;;; Emacs操作
+
+;;; C-jでs式を評価
+(global-set-key (kbd "C-j") 'eval-defun)
 
 ;;; C-aで、開始場所と先頭をトグル
 ;; thx http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
@@ -236,22 +458,13 @@
       (move-beginning-of-line 1))))
 (global-set-key (kbd "C-a") 'my-goto-line-beginning-or-indent)
 
-;;; Shift+Returnで<br />を入力
-(define-key global-map [S-return] "<br />")
-
-;;; opt+¥でバックスラッシュを入力
-(define-key global-map (kbd "M-¥") "\\")
-
 ;;; ウィンドウ切り替え (M-tab)
-(define-key global-map [M-tab] 'other-window)
-
-;;; M-g で指定行へジャンプ
-(global-set-key "\M-g" 'goto-line)
+(global-set-key [M-tab] 'other-window)
 
 ;;; anything
-(define-key global-map (kbd "C-;") 'anything)
+(global-set-key (kbd "C-;") 'anything)
 
-;; create shell another at window
+;;; create shell another at window
 ;; thx http://qiita.com/7gano@github/items/6afbe24a00c4ee4a634b
 (defun create-shell-window-vertically ()
   (interactive)
@@ -259,14 +472,14 @@
 		(split-window-vertically))
 	(other-window 1)
 	(multi-term))
-(define-key global-map (kbd "M-!") 'create-shell-window-vertically)
+(global-set-key (kbd "M-!") 'create-shell-window-vertically)
 
-;; point undo and redo
+;;; point undo and redo
 ;; opt+cmd+[left|right]でカーソル履歴移動
-(define-key global-map [M-s-left] 'point-undo)
-(define-key global-map [M-s-right] 'point-redo)
+(global-set-key [M-s-left] 'point-undo)
+(global-set-key [M-s-right] 'point-redo)
 
-;; multiple-cursor and smartrep
+;;; multiple-cursor and smartrep
 ;; 複数箇所選択と編集
 (declare-function smartrep-define-key "smartrep")
 
@@ -294,107 +507,109 @@
 ;; マウス設定
 ;; thx http://cave.under.jp/_contents/emacs.html#60
 (if window-system (progn
-;; 右ボタンの割り当て(押しながらの操作)をはずす。
-(global-unset-key [down-mouse-3])
-
-;; マウスの右クリックメニューを出す(押して、離したときにだけメニューが出る)
-(defun bingalls-edit-menu (event)
-  (interactive "e")
-  (popup-menu menu-bar-edit-menu))
-(global-set-key [mouse-3] 'bingalls-edit-menu)))
+										;; 右ボタンの割り当て(押しながらの操作)をはずす。
+										(global-unset-key [down-mouse-3])
+										;; マウスの右クリックメニューを出す(押して、離したときにだけメニューが出る)
+										(defun bingalls-edit-menu (event)
+											(interactive "e")
+											(popup-menu menu-bar-edit-menu))
+										(global-set-key [mouse-3] 'bingalls-edit-menu)))
 
 ;;; ------------------------------------------------------------
 ;;; ほか諸設定
 
-;; Rictyを等幅で使う（ウェブ上で散見される記事と違い）
-(load "ricty")
-
-;; リージョンを上書きできるようにする
+;;; リージョンを上書きできるようにする
 (delete-selection-mode t)
 
-;; inline patchを有効に
+;;; 自動分割は原則左右で
+(setq split-height-threshold nil)
+
+;;; inline patchを有効に
 (setq default-input-method "MacOSX")
 
-;; CmdをMetaにしない
+;;; CmdをMetaにしない
 (setq mac-pass-command-to-system nil)
 (setq mac-command-modifier 'super)
 
-;; optキーがMeta
+;;; optキーがMeta
 (setq mac-option-modifier 'meta)
 
-;; IME関係
+;; yes/no を y/n へ
+(fset 'yes-or-no-p 'y-or-n-p)
+
+;; スクロール時のカーソル位置の維持
+(setq scroll-preserve-screen-position t)
+
+;;; IME関係
 ;; thx http://qiita.com/catatsuy/items/c5fa34ead92d496b8a51
 
-;; emacs 起動時は英数モードから始める
+;;; emacs 起動時は英数モードから始める
 ;(add-hook 'after-init-hook 'mac-change-language-to-us)
 
-;; minibuffer 内は英数モードにする
+;;; minibuffer 内は英数モードにする
 ;(add-hook 'minibuffer-setup-hook 'mac-change-language-to-us)
 
-;; [migemo]isearch のとき IME を英数モードにする
+;;; [migemo]isearch のとき IME を英数モードにする
 ;(add-hook 'isearch-mode-hook 'mac-change-language-to-us)
 
-;; ドラッグアンドドロップでファイルを開く＋あたらしいウィンドウでひらかない
-(define-key global-map [ns-drag-file] 'ns-find-file)
+;;; ドラッグアンドドロップでファイルを開く＋あたらしいウィンドウでひらかない
+(global-set-key [ns-drag-file] 'ns-find-file)
 (setq ns-pop-up-frames nil)
 
-;; 起動画面を抑止
+;;; 起動画面を抑止
 (setq inhibit-startup-message t)
 
-;; スクラッチメッセージ（起動時注意書き）を抑止
+;;; スクラッチメッセージ（起動時注意書き）を抑止
 (setq initial-scratch-message nil)
 
-;; オートインデント無効
+;;; オートインデント無効
 (electric-indent-mode -1)
 
-;; 警告音とフラッシュを無効
+;;; 警告音とフラッシュを無効
 (setq ring-bell-function 'ignore)
 
-;; バックアップファイルを作らないようにする
+;;; バックアップファイルを作らないようにする
 (setq make-backup-files nil)
 
-;; 終了時にオートセーブファイルを消す
+;;; 終了時にオートセーブファイルを消す
 (setq delete-auto-save-files t)
 
-;; ウィンドウサイズの位置、サイズ
-(if window-system (progn
-  (setq initial-frame-alist '((width . 210)(height . 50)(top . 0)(left . 10)))
-  (set-background-color "Black")
-  (set-foreground-color "White")
-  (set-cursor-color "Gray")
-))
-
-;; ウィンドウの透明化
-(add-to-list 'default-frame-alist '(alpha . (0.90 0.90)))
-
-;; ツールバーを非表示
+;;; ツールバーを非表示
 ;; M-x tool-bar-mode で表示非表示を切り替えられる
 (tool-bar-mode -1)
 
-;; タイトルバーにファイル名表示
+;;; タイトルバーにファイル名表示
 (setq frame-title-format (format "%%f - Emacs@%s" (system-name)))
 
-;; 何文字目にいるか表示
+;;; 何文字目にいるか表示
 (column-number-mode 1)
 
-;; 行番号を表示する
-;; 表示切替はM-x wb-line-number-toggleと入力。
-(require 'linum)
-(global-linum-mode t)
-(setq linum-format "%5d: ")
+;;; ミニバッファ履歴を次回Emacs起動時にも保存する
+(savehist-mode 1)
 
-;; 改行後にインデント
+;;; 改行後にインデント
 ;; (global-set-key "\C-m" 'newline-and-indent)
 
-;; タブキー
+;;; タブキー
 (setq default-tab-width 2)
 ;(setq indent-line-function 'indent-relative-maybe)
 
-;; 行カーソル
+;;; 行カーソル
 ;; thx http://rubikitch.com/2015/05/14/global-hl-line-mode-timer/
 (setq hl-line-face 'underline)
 (global-hl-line-mode)
 ;; (require 'hl-line)
+;; (defface hlline-face
+;;   '((((class color)
+;;       (background dark))
+;;      (:background "dark slate gray"))
+;;     (((class color)
+;;       (background light))
+;;      (:background "#CC0066"))
+;;     (t
+;;      ()))
+;;   "*Face used by hl-line.")
+;; (setq hl-line-face 'hlline-face)
 ;; (defun global-hl-line-timer-function ()
 ;;   (global-hl-line-unhighlight-all)
 ;;   (let ((global-hl-line-mode t))
@@ -403,51 +618,11 @@
 ;;       (run-with-idle-timer 0.03 t 'global-hl-line-timer-function))
 ;; (cancel-timer global-hl-line-timer)
 
-;; 釣り合いのとれる括弧のハイライト
+;;; 釣り合いのとれる括弧のハイライト
 (show-paren-mode 1)
 
-;;; elscreen
-;(require 'elscreen)
-;(setq elscreen-prefix-key (kbd "C-z"))
-;(elscreen-start)
-
-
-;; -------------------------------------------------
-;; -------------------------------------------------
-;; -------------------------------------------------
-;; under construct
-(defun do-searsh-from-other-window-string ()
-	"mac like new window (cmd+n)."
-  (interactive)
-	(split-window-horizontally)
-)
-;(define-key global-map (kbd "s-f") 'do-searsh-from-other-window-string)
-
-
-;;現在バッファのファイルのフルパスを取得
-
-(defun my-get-current-path ()
-  (interactive)
-  (or (buffer-file-name) (expand-file-name default-directory)))
-
-;;バッファのテキストエンコーディングを表示
-(defun my-show-text-encoding ()
-  (interactive)
-  (message (format "%s" buffer-file-coding-system)))
-
-;; HTML:タグとタグの間、またはタグ内を一気に選択
-;;http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
-;;ここよく見ること。やりたいことがたくさん書いてある！
-(defun my-region-angle-brackets ()
-  (interactive)
-  (let ($pt)
-    (skip-chars-backward "^<>")
-    (setq $pt (point))
-    (skip-chars-forward "^<>")
-    (set-mark $pt)))
-
-;;後述の置換に使用
-(defun my-replace-strings-in-region-by-list ($list)
+;;; 選択範囲内の文字列置換
+(defun replace-strings-in-region-by-list ($list)
   "Replace strings in a region according to $list"
   (if mark-active
       (let* (($beg (region-beginning))
@@ -460,27 +635,46 @@
         (insert $word))
     (error "Need to make region")))
 
-;;選択範囲を1行にする
-(defun my-join-multi-lines-to-one ()
+
+;;; elscreen
+;(require 'elscreen)
+;(setq elscreen-prefix-key (kbd "C-z"))
+;(elscreen-start)
+
+;; -------------------------------------------------
+;; -------------------------------------------------
+;; -------------------------------------------------
+;; experiment area
+
+(defun do-searsh-from-other-window-string ()
+	"mac like new window (cmd+n)."
   (interactive)
-  (my-replace-strings-in-region-by-list
-   '(("\\(\n\\s-*\\)+" . ""))))
+	(split-window-horizontally)
+)
+;(global-set-key (kbd "s-f") 'do-searsh-from-other-window-string)
+
+
+;;現在バッファのファイルのフルパスを取得
+(defun my-get-current-path ()
+  (interactive)
+  (or (buffer-file-name) (expand-file-name default-directory)))
+(my-get-current-path)
 
 ;;s-wrap
 
 (defun my-command-test () 
 	(interactive) 
 	(let (src)
-		(setq src (s-split "
-" (buffer-substring 
+		(setq src (s-split "" (buffer-substring 
 									(region-beginning) (region-end))))
 		(message src)))
+;(global-set-key (kbd "s-2") 'my-command-test1)
+
 
 (defun my-command-test1 () 
 	(interactive)
 	(let (lines)
-		(setq lines (s-split "
-" (buffer-substring 
+		(setq lines (s-split "" (buffer-substring 
 									(region-beginning) (region-end))))
 		;; (setq lines '())
 		;; (add-to-list 'lines line)
@@ -489,6 +683,20 @@
 			(insert (car lines) "\n")
 			(setq lines (cdr lines)))))
 
-;(define-key global-map (kbd "s-2") 'my-command-test1)
+;;; w3m
+;; macportsなどで、w3mは入れておくこと。
+;; M-x package-install RET w3m
+;; w3mが見つからない系のエラーが出たら、which w3mでパスを探して、setq 
+;; あるいは
+;; byte-code: Symbol's function definition is void: w3m-make-menu-item
+;; というようなエラーが出たら、
+;; cd ~/.emacs.d/elisp/w3m TAB
+;; で、w3mのel群を探し、
+;; find . -name ".elc"|xargs rm
+;; で、バイトコンパイル済みのファイルを削除
+;;(setq w3m-command "/opt/local/bin/w3m")
+;;(require 'w3m-load)
+;;M-x w3m
+;; で起動。Uでurlを入力できる。
 
 
