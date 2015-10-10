@@ -372,39 +372,51 @@
 ;; 任意のタグ
 (defun any-html-tag ($tag)
   (interactive "sTag: ")
-	(cond
-	 ;; input
-	 ((string-equal $tag "input") (message "input"))
-	 ;; table
-	 ((string-equal $tag "table") 
-		(setq lines (s-split "" (buffer-substring 
-															 (region-beginning) (region-end))))
-		(setq str "")
-		(while lines
-			(setq str (concat str (car lines)) "\n")
-			(setq lines (cdr lines)))
-;;		(message str)
+	(let* (($beg (region-beginning))
+				 ($end (region-end))
+				 ($word (buffer-substring-no-properties $beg $end)))
+		(if mark-active () (setq $word ""))
+		(cond
+		 ;; input
+		 ((string-equal $tag "input")
+				 (setq $type (read-string "type (1:text, 2:hidden, 3:radio, 4:checkbox, 5:submit, 6:password, 7:image, 8:file): " nil 'my-history))
+				 (cond
+					((string-equal $type "1")
+					 (message "text"))
+					((string-equal $type "2")
+					 (message "hidden"))))
+		 ;; singular tag - hr, br
+		 ((find $tag '("hr" "br") :test #'string=)
+			(setq $tag (concat "<" $tag " />")))
+		 ;; singular tag - img
+		 ((string-equal $tag "img")
+			(setq $tag (concat "<img src=\"" $word "\" alt=\"\" />")))
+		 ;; ul-li, ol-li
+		 ((find $tag '("ul-li" "ol-li") :test #'string=)
+			 (setq $html "")
+			 (setq $lines (split-string $word "\n"))
+			 (while $lines
+				 (if (string-equal (car $lines) "") ()
+					 (progn (setq $html (concat $html "<li>" (car $lines) "</li>\n"))
+									(setq $lines (cdr $lines)))))
+			 (if (string-equal $tag "ul-li")
+					 (setq $tag (concat "<ul>\n" $html "</ul>\n"))
+				 (setq $tag (concat "<ol>\n" $html "</ol>\n"))))
+		 ;; p-each
+		 ((string-equal $tag "p-each")
+			 (setq $html "")
+			 (setq $lines (split-string $word "\n"))
+			 (while $lines
+				 (if (string-equal (car $lines) "") ()
+					 (progn (setq $html (concat $html "<p>" (car $lines) "</p>\n"))
+									(setq $lines (cdr $lines)))))
+				 (setq $tag $html))
+		 ;; specify tag
+		 (t (setq $tag (concat "<" $tag ">" $word "</" $tag ">"))))
+		;; put tags
+		(if mark-active (delete-region $beg $end) nil)
+		(insert $tag)))
 
-;;		(setq lines (concat "<table>\n" lines "</table>"))
-;;		(insert lines)
-)
-		;; (setq lines (s-split "" (buffer-substring 
-		;; 							(region-beginning) (region-end))))
-		;; (while lines
-		;; 	(insert "res: ")
-		;; 	(insert (car lines) "\n")
-		;; 	(setq lines (cdr lines))))
-	 ;; singular tags
-	 ((find $tag '("hr" "br") :test #'string=) (insert (concat "<" $tag " />")))
-	 ;; wrapper tags
-	 (t (if (and mark-active transient-mark-mode)
-      (shell-command-on-region
-       (region-beginning) (region-end)
-       (concat "perl -0 -p -w -e \'"
-               "s/^([^\\S\\r\\n]*)(\\S.*?)[^\\S\\r\\n]*$/$1<"
-               $tag ">$2<\\/" $tag ">/gm\'")
-       nil t))))
-)
 (global-set-key (kbd "s-M-v") 'any-html-tag) ; cmd+shift+v
 
 ;;; headings
@@ -446,10 +458,75 @@
 (global-set-key (kbd "s-M-s") 'span-tag) ; cmd+shift+s
 
 ;;; p
-(defun span-tag ()
+(defun p-tag ()
 	(interactive)
-	(any-html-tag "span"))
-(global-set-key (kbd "s-M-p") 'span-tag) ; cmd+shift+p
+	(any-html-tag "p-each"))
+(global-set-key (kbd "s-M-p") 'p-tag) ; cmd+shift+p
+
+;;; ul-li
+(defun ul-li-tag ()
+	(interactive)
+	(any-html-tag "ul-li"))
+(global-set-key (kbd "s-M-u") 'ul-li-tag) ; cmd+shift+u
+
+;;; ol-li
+(defun ol-li-tag ()
+	(interactive)
+	(any-html-tag "ol-li"))
+(global-set-key (kbd "s-M-o") 'ol-li-tag) ; cmd+shift+o
+
+
+;;; remove-html-tags
+(defun remove-html-tags ($tag)
+  (interactive "sTag (1:all, 2:famous block, 3:form not text, 4:img not text, 5:ruby, tag:specify tag): ")
+	(cond
+	 ;; all
+	 ((string-equal $tag "1") (progn
+															(replace-strings-in-region-by-list
+															 '(("<.+?>" . "")))
+															(message "remove all tags")))
+	 ;; famous block tags
+	 ((string-equal $tag "2") (progn
+															(replace-strings-in-region-by-list
+															 '(("</*p.*?>\\|</*h[1-6].*?>\\|</*ul.*?>\\|</*ol.*?>\\|</*li.*?>\\|</*pre.*?>\\|</*dl.*?>\\|</*dt.*?>\\|</*dd.*?>\\|</*div.*?>\\|</*center.*?>\\|</*blockquote.*?>\\|</*address.*?>\\|</*table.*?>\\|</*tr.*?>\\|</*td.*?>\\|</*th.*?>\\|</*thead.*?>\\|</*section.*?>\\|</*header.*?>\\|</*footer.*?>\\|</*article.*?>" . "")))
+															(message "remove famous block tags")))
+	 ;; form elements tag except for text
+	 ((string-equal $tag "3") (progn
+															(replace-strings-in-region-by-list
+															 '(("<label.*?>\\(.+?\\)</label>" . "\\1")))
+															(replace-strings-in-region-by-list
+															 '(("<option.*?>\\(.+?\\)</option>" . "\\1")))
+															(replace-strings-in-region-by-list
+															 '(("<input.*?value=\"\\(.+?\\)\".*?>" . "\\1")))
+															(replace-strings-in-region-by-list
+															 '(("<textarea.*?>\\(.+?\\)</textarea>" . "\\1")))
+															(message "remove form elements tag except for text")))
+	 ;; img tag except for alt
+	 ((string-equal $tag "4") (progn
+															(replace-strings-in-region-by-list
+															 '(("<img.*?alt=\"\\(.+?\\)\".*?>" . "\\1")))
+															(message "remove form elements tag except for text")))
+	 ;; ruby tag and ruby text
+	 ;; "<ruby>(?:<rb>)*(.*?)(?:</rb>)*(?:<rp>.*?</rp>)*<rt>.+?</rt>(?:<rp>.*?</rp>)*</ruby>"
+	 ((string-equal $tag "5") (progn
+															(replace-strings-in-region-by-list
+															 '(("<ruby>\\(.+?\\)<rt>.+?<rt></ruby>" . "\\1")))
+															(message "remove ruby tag and ruby text")))
+	 ;; specify tag
+	 (t (progn
+				;; (replace-strings-in-region-by-list
+				;;  '(((concat "</*" "span" ".*?>") . "")))
+				(let* (($beg (region-beginning))
+							 ($end (region-end))
+							 ($word (buffer-substring-no-properties $beg $end)))
+					(setq $word (replace-regexp-in-string (concat "</*" $tag ".*?>") "" $word))
+					(delete-region $beg $end)
+					(insert $word))
+				(message "remove specified tag")))))
+
+(global-set-key (kbd "M-s-r") 'remove-html-tags) ; opt+cmd+r
+
+
 
 ;;; 全角数字を半角数字に
 (defun convert-to-single-byte-number ()
@@ -491,7 +568,7 @@
       (move-beginning-of-line 1))))
 (global-set-key (kbd "C-a") 'my-goto-line-beginning-or-indent)
 
-;;; ウィンドウ切り替え (M-tab)
+;;; ウィンドウ切り替え (opt+tab)
 (global-set-key [M-tab] 'other-window)
 
 ;;; anything
