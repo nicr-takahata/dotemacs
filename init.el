@@ -44,6 +44,7 @@
 ;; (require 'package)
 ;; (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 ;; (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/") t)
+;; (add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/") t)
 ;; (package-initialize)
 ;; M-x install-elisp RET http://cx4a.org/pub/undohist.el
 ;; M-x auto-install-batch RET anything RET
@@ -81,6 +82,7 @@
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/") t)
+(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/") t)
 (package-initialize)
 
 ;;; undohist
@@ -221,7 +223,7 @@
 ;; http://www.jaist.ac.jp/~n-yoshi/tips/elisp_tips.html#buffer
 (defvar my-ignore-blst             ; 移動の際に無視するバッファのリスト
   '("*Help*" "*Compile-Log*" "*Mew completions*" "*Completions*"
-    "*Shell Command Output*" "*Apropos*" "*Buffer List*" "*Messages" "*anything*"))
+    "*Shell Command Output*" "*Apropos*" "*Buffer List*" "*Messages*" "*anything*"))
 (defvar my-visible-blst nil)       ; 移動開始時の buffer list を保存
 (defvar my-bslen 15)               ; buffer list 中の buffer name の最大長
 (defvar my-blist-display-time 2)   ; buffer list の表示時間
@@ -268,6 +270,7 @@
     (my-show-buffer-list (if pos "[-->] " "[<--] ") (if pos " > "  " < " )))
 (setq this-command 'my-operate-buffer))
 
+;; opt+cdm+[left|right]（ブラウザと同じ）で、バッファ移動
 (global-set-key [M-s-left] (lambda () (interactive) (my-operate-buffer nil)))
 (global-set-key [M-s-right] (lambda () (interactive) (my-operate-buffer t)))
 
@@ -465,6 +468,13 @@
      ("０" . "0"))))
 (global-set-key (kbd "s-u") 'convert-to-single-byte-number)
 
+;;; 選択範囲を[大文字|小文字|キャピタライズ]に
+(put 'upcase-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
+(global-set-key (kbd "s-U") 'upcase-region)
+(global-set-key (kbd "s-L") 'downcase-region)
+(global-set-key (kbd "s-C") 'capitalize-region)
+
 ;;; ------------------------------------------------------------
 ;;; Emacs操作
 
@@ -498,9 +508,9 @@
 (global-set-key (kbd "M-!") 'create-shell-window-vertically)
 
 ;;; point undo and redo
-;; opt+cmd+[left|right]でカーソル履歴移動
-(global-set-key [M-s-left] 'point-undo)
-(global-set-key [M-s-right] 'point-redo)
+;; shift+cmd+[left|right]でカーソル履歴移動
+(global-set-key [S-s-left] 'point-undo)
+(global-set-key [S-s-right] 'point-redo)
 
 ;;; multiple-cursor and smartrep
 ;; 複数箇所選択と編集
