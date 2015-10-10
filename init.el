@@ -377,46 +377,100 @@
 				 ($word (buffer-substring-no-properties $beg $end)))
 		(if mark-active () (setq $word ""))
 		(cond
+		 ;; anchor
+		 ((string-equal $tag "a")
+			(setq $url (read-string "url: " nil 'my-history))
+			(setq $tag (concat "<a href=\"" $url "\">" $word "</a>")))
+		 ;; anchor-url
+		 ((string-equal $tag "a-url")
+			(if (string-match "@" $word)
+					(setq $tag (concat "<a href=\"mailto:" $word "\">" $word "</a>"))
+				(setq $tag (concat "<a href=\"" $word "\">" $word "</a>"))))
 		 ;; input
 		 ((string-equal $tag "input")
-				 (setq $type (read-string "type (1:text, 2:hidden, 3:radio, 4:checkbox, 5:submit, 6:password, 7:image, 8:file): " nil 'my-history))
-				 (cond
-					((string-equal $type "1")
-					 (message "text"))
-					((string-equal $type "2")
-					 (message "hidden"))))
+			(setq $type (read-string "type (1:text, 2:hidden, 3:radio, 4:checkbox, 5:submit, 6:password, 7:image, 8:file): " nil 'my-history))
+			(cond
+			 ((string-equal $type "1")
+				(setq $tag "<input type=\"text\" name=\"nameStr\" id=\"idStr\" size=\"20\" value=\"\" />"))
+			 ((string-equal $type "2")
+				(setq $tag "<input type=\"hidden\" name=\"nameStr\" id=\"idStr\" value=\"\" />"))
+			 ((string-equal $type "3")
+				(setq $tag "<input type=\"radio\" name=\"nameStr\" id=\"idStr\" value=\"\" />"))
+			 ((string-equal $type "4")
+				(setq $tag "<input type=\"checkbox\" name=\"nameStr\" id=\"idStr\" value=\"\" />"))
+			 ((string-equal $type "5")
+				(setq $tag "<input type=\"submit\" name=\"nameStr\" id=\"idStr\" value=\"\" />"))
+			 ((string-equal $type "6")
+				(setq $tag "<input type=\"password\" name=\"nameStr\" id=\"idStr\" value=\"\" />"))
+			 ((string-equal $type "7")
+				(setq $tag "<input type=\"image\" name=\"nameStr\" id=\"idStr\" value=\"\" />"))
+			 ((string-equal $type "8")
+				(setq $tag "<input type=\"file\" name=\"nameStr\" id=\"idStr\" value=\"\" />"))))
+
 		 ;; singular tag - hr, br
 		 ((find $tag '("hr" "br") :test #'string=)
 			(setq $tag (concat "<" $tag " />")))
+
 		 ;; singular tag - img
 		 ((string-equal $tag "img")
 			(setq $tag (concat "<img src=\"" $word "\" alt=\"\" />")))
+
 		 ;; ul-li, ol-li
 		 ((find $tag '("ul-li" "ol-li") :test #'string=)
 			 (setq $html "")
 			 (setq $lines (split-string $word "\n"))
 			 (while $lines
-				 (if (string-equal (car $lines) "") ()
-					 (progn (setq $html (concat $html "<li>" (car $lines) "</li>\n"))
-									(setq $lines (cdr $lines)))))
+				 (if (string-equal (car $lines) "") nil
+					 (progn (setq $html (concat $html "\t<li>" (car $lines) "</li>\n"))))
+				 (setq $lines (cdr $lines)))
 			 (if (string-equal $tag "ul-li")
 					 (setq $tag (concat "<ul>\n" $html "</ul>\n"))
 				 (setq $tag (concat "<ol>\n" $html "</ol>\n"))))
+
 		 ;; p-each
 		 ((string-equal $tag "p-each")
 			 (setq $html "")
 			 (setq $lines (split-string $word "\n"))
 			 (while $lines
-				 (if (string-equal (car $lines) "") ()
-					 (progn (setq $html (concat $html "<p>" (car $lines) "</p>\n"))
-									(setq $lines (cdr $lines)))))
-				 (setq $tag $html))
+				 (if (string-equal (car $lines) "") nil
+					 (progn (setq $html (concat $html "<p>" (car $lines) "</p>\n"))))
+				 (setq $lines (cdr $lines)))
+			 (setq $tag $html))
+
+		 ;; table
+		 ((string-equal $tag "table")
+		 	(setq $type (read-string "type (1:th, 2:thead, 3:th and thead, 4:no headers): " nil 'my-history))
+		 	(setq $html "")
+		 	(setq $cnt 1)
+		 	(setq $lines (split-string $word "\n"))
+		 	(while $lines
+		 		(if (string-equal (car $lines) "") nil
+		 			(progn
+						(defun convert-to-th ($each-line) (concat "<thead>\n<tr>\n\t<th>" (replace-regexp-in-string "\t" "</th>\n\t<th>" $each-line) "</th>\n</tr>\n</thead>\n"))
+						(defun convert-to-td ($each-line) (concat "<tr>\n\t<td>" (replace-regexp-in-string "\t" "</td>\n\t<td>" $each-line) "</td>\n</tr>\n"))
+						;; (defun add-tr-thead ($whole $each) )
+						(if (eq $cnt 1)
+								(if (find $type '("2" "3") :test #'string=)
+										(setq $line (convert-to-th (car $lines)))
+									(setq $line (convert-to-td (car $lines))))
+							(setq $line (convert-to-td (car $lines))))
+		 				(setq $html (concat $html $line))))
+				(setq $cnt 2)
+				(setq $lines (cdr $lines)))
+		 	(setq $tag (concat "<table>\n" $html "</table>\n"))
+			(if (find $type '("1" "3") :test #'string=)
+				(setq $tag (replace-regexp-in-string "<tr>\n\t<td>\\(.+?\\)</td>" "<tr>\n\t<th>\\1</th>" $tag))))
+
+		 ;; comment out
+		 ((string-equal $tag "comment-out")
+			(setq $tag (concat "<!-- " $word " -->")))
+
 		 ;; specify tag
 		 (t (setq $tag (concat "<" $tag ">" $word "</" $tag ">"))))
+
 		;; put tags
 		(if mark-active (delete-region $beg $end) nil)
 		(insert $tag)))
-
 (global-set-key (kbd "s-M-v") 'any-html-tag) ; cmd+shift+v
 
 ;;; headings
@@ -438,43 +492,66 @@
 (defun h6-tag ()
 	(interactive)
 	(any-html-tag "h6"))
-(global-set-key (kbd "s-M-1") 'h1-tag) ; cmd+shift+1
-(global-set-key (kbd "s-M-2") 'h2-tag) ; cmd+shift+2
-(global-set-key (kbd "s-M-3") 'h3-tag) ; cmd+shift+3
-(global-set-key (kbd "s-M-4") 'h4-tag) ; cmd+shift+4
-(global-set-key (kbd "s-M-5") 'h5-tag) ; cmd+shift+5
-(global-set-key (kbd "s-M-6") 'h6-tag) ; cmd+shift+6
+(global-set-key (kbd "s-M-1") 'h1-tag) ; opt+cmd+1
+(global-set-key (kbd "s-M-2") 'h2-tag) ; opt+cmd+2
+(global-set-key (kbd "s-M-3") 'h3-tag) ; opt+cmd+3
+(global-set-key (kbd "s-M-4") 'h4-tag) ; opt+cmd+4
+(global-set-key (kbd "s-M-5") 'h5-tag) ; opt+cmd+5
+(global-set-key (kbd "s-M-6") 'h6-tag) ; opt+cmd+6
+
+;;; a
+(defun a-tag ()
+	(interactive)
+	(any-html-tag "a"))
+(global-set-key (kbd "s-M-a") 'a-tag) ; opt+cmd+a
+
+;;; a-url
+(defun a-url-tag ()
+	(interactive)
+	(any-html-tag "a-url"))
+(global-set-key (kbd "s-M-A") 'a-url-tag) ; opt+cmd+shif+a
 
 ;;; strong
 (defun strong-tag ()
 	(interactive)
 	(any-html-tag "strong"))
-(global-set-key (kbd "s-M-g") 'strong-tag) ; cmd+shift+g
+(global-set-key (kbd "s-M-g") 'strong-tag) ; opt+cmd+g
 
 ;;; span
 (defun span-tag ()
 	(interactive)
 	(any-html-tag "span"))
-(global-set-key (kbd "s-M-s") 'span-tag) ; cmd+shift+s
+(global-set-key (kbd "s-M-s") 'span-tag) ; opt+cmd+s
+
+;;; comment-out
+(defun comment-out-tag ()
+	(interactive)
+	(any-html-tag "comment-out"))
+(global-set-key (kbd "s-M-c") 'comment-out-tag) ; opt+cmd+c
 
 ;;; p
 (defun p-tag ()
 	(interactive)
 	(any-html-tag "p-each"))
-(global-set-key (kbd "s-M-p") 'p-tag) ; cmd+shift+p
+(global-set-key (kbd "s-M-p") 'p-tag) ; opt+cmd+p
 
 ;;; ul-li
 (defun ul-li-tag ()
 	(interactive)
 	(any-html-tag "ul-li"))
-(global-set-key (kbd "s-M-u") 'ul-li-tag) ; cmd+shift+u
+(global-set-key (kbd "s-M-u") 'ul-li-tag) ; opt+cmd+u
 
 ;;; ol-li
 (defun ol-li-tag ()
 	(interactive)
 	(any-html-tag "ol-li"))
-(global-set-key (kbd "s-M-o") 'ol-li-tag) ; cmd+shift+o
+(global-set-key (kbd "s-M-o") 'ol-li-tag) ; opt+cmd+o
 
+;;; table
+(defun table-tag ()
+	(interactive)
+	(any-html-tag "table"))
+(global-set-key (kbd "s-M-t") 'table-tag) ; opt+cmd+t
 
 ;;; remove-html-tags
 (defun remove-html-tags ($tag)
