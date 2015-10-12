@@ -1,3 +1,9 @@
+;;; jidaikobo-web-authoring-set.el --- jidaikobo web authoring
+;; Copyright (C) 2015 by jidaikobo-shibata
+;; Author: jidaikobo
+;; URL: https://github.com/jidaikobo-shibata/dotemacs
+
+;;; Commentary:
 ;;; ------------------------------------------------------------
 ;; 時代工房のウェブ制作用キーバインド集
 ;; 基本的にはcmd+opt+(M-s-)となにか一文字で操作する
@@ -36,11 +42,13 @@
 ;; cmd+shift+l: 選択範囲をlower case
 ;; cmd+shift+c: 選択範囲をcapitalize
 
+;;; Code:
+
 ;;; ------------------------------------------------------------
 ;;; 選択範囲内の文字列置換
 ;; thx http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
 (defun replace-strings-in-region-by-list ($list)
-  "Replace strings in a region according to $list"
+  "Replace strings in a region according to $LIST."
   (if mark-active
       (let* (($beg (region-beginning))
              ($end (region-end))
@@ -57,7 +65,7 @@
 ;;; phpでvar_dump()するためのキーバインド
 (declare-function find "find" ($arg1 $arg2 $arg3 $arg4))
 (defun dump-values ($type $ip)
-	"insert html intaractive"
+	"Insert html intaractive."
   (interactive)
 	(let* (($beg (region-beginning))
 				 ($end (region-end))
@@ -357,6 +365,7 @@
 
 ;;; remove-html-tags
 (defun remove-html-tags ($tag)
+	"Remove html tags.  $TAG is given interactivelly."
   (interactive "sTag (1:all, 2:famous block, 3:form not text, 4:img not text, 5:ruby, tag:specify tag): ")
 	(cond
 	 ;; all
@@ -407,7 +416,7 @@
 ;;; ------------------------------------------------------------
 ;;; 全角数字を半角数字に
 (defun convert-to-single-byte-number ()
-  "Convert multi-byte numbers in region into single-byte number"
+  "Convert multi-byte numbers in region into single-byte number."
   (interactive)
   (replace-strings-in-region-by-list
    '(("１" . "1")
@@ -425,6 +434,7 @@
 ;;; ------------------------------------------------------------
 ;;; 選択範囲を1行にする
 (defun join-multi-lines-to-one ()
+	"Join multi lines."
   (interactive)
   (replace-strings-in-region-by-list
    '(("\\(\n\\s-*\\)+" . ""))))
@@ -438,6 +448,7 @@
 ;;; ------------------------------------------------------------
 ;;; HTML:タグとタグの間、またはタグ内を一気に選択
 (defun region-angle-brackets ()
+	"Select region angle brackets."
   (interactive)
   (let ($pt)
     (skip-chars-backward "^<>")
@@ -457,6 +468,9 @@
 ;;; ------------------------------------------------------------
 ;;現在バッファのファイルのフルパスを取得
 (defun get-current-path ()
+	"Get current file path."
   (interactive)
   (insert (or (buffer-file-name) (expand-file-name default-directory))))
 (global-set-key (kbd "M-s-k") 'get-current-path)
+
+;;; jidaikobo-web-authoring-set.el ends here
