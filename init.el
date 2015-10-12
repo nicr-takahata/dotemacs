@@ -63,6 +63,7 @@
 ;; M-x package-install RET point-undo RET
 ;; M-x package-install RET multiple-cursors RET
 ;; M-x package-install RET smartrep RET
+;; M-x package-install RET flycheck RET
 
 ;;; ------------------------------------------------------------
 ;;; package類のロード等
@@ -97,6 +98,10 @@
 
 ;;; multi-term
 (load "multi-term-init")
+
+;;; flycheck
+(load "flycheck")
+(add-hook 'after-init-hook #'global-flycheck-mode)
 
 ;;; recentf
 ;; 最近開いたファイルの履歴
@@ -282,10 +287,17 @@
 (defun contexual-close-window ()
 	"mac like close window (cmd+w)."
 	(interactive)
-	(if (one-window-p)
-			(progn (call-interactively 'write-file)
-						 (kill-buffer))
-		(delete-window)))
+	(let ($save)
+		(if (one-window-p)
+				(if (buffer-modified-p)
+						(progn
+							(setq $save (read-string "overwrite? (1:overrite, 2:save as): " nil 'my-history))
+							(cond
+							 ((string-equal $save "2")
+								(call-interactively 'write-file))
+							 (t (save-buffer)))
+					(kill-buffer)))
+		(delete-window))))
 (global-set-key (kbd "s-w") 'contexual-close-window)
 
 ;;; mac like new window (cmd+n)
@@ -349,13 +361,6 @@
 ;;; M-g or cmd+opt+j で指定行へジャンプ
 (global-set-key "\M-g" 'goto-line)
 (global-set-key (kbd "M-s-j") 'goto-line)
-
-;;; 選択範囲を[大文字|小文字|キャピタライズ]に
-(put 'upcase-region 'disabled nil)
-(put 'downcase-region 'disabled nil)
-(global-set-key (kbd "s-U") 'upcase-region)
-(global-set-key (kbd "s-L") 'downcase-region)
-(global-set-key (kbd "s-C") 'capitalize-region)
 
 ;;; ------------------------------------------------------------
 ;;; Emacs操作
@@ -535,8 +540,6 @@
 ;;; 釣り合いのとれる括弧のハイライト
 (show-paren-mode 1)
 
-
-
 ;;; elscreen
 ;(require 'elscreen)
 ;(setq elscreen-prefix-key (kbd "C-z"))
@@ -551,53 +554,6 @@
 	"mac like new window (cmd+n)."
   (interactive)
 	(split-window-horizontally)
+	(split-window-vertically)
 )
-;(global-set-key (kbd "s-f") 'do-searsh-from-other-window-string)
-
-
-;;現在バッファのファイルのフルパスを取得
-(defun my-get-current-path ()
-  (interactive)
-  (or (buffer-file-name) (expand-file-name default-directory)))
-(my-get-current-path)
-
-;;s-wrap
-
-(defun my-command-test () 
-	(interactive) 
-	(let (src)
-		(setq src (s-split "" (buffer-substring 
-									(region-beginning) (region-end))))
-		(message src)))
-;(global-set-key (kbd "s-2") 'my-command-test1)
-
-
-(defun my-command-test1 () 
-	(interactive)
-	(let (lines)
-		(setq lines (s-split "" (buffer-substring 
-									(region-beginning) (region-end))))
-		;; (setq lines '())
-		;; (add-to-list 'lines line)
-		(while lines
-			(insert "res: ")
-			(insert (car lines) "\n")
-			(setq lines (cdr lines)))))
-
-;;; w3m
-;; macportsなどで、w3mは入れておくこと。
-;; M-x package-install RET w3m
-;; w3mが見つからない系のエラーが出たら、which w3mでパスを探して、setq 
-;; あるいは
-;; byte-code: Symbol's function definition is void: w3m-make-menu-item
-;; というようなエラーが出たら、
-;; cd ~/.emacs.d/elisp/w3m TAB
-;; で、w3mのel群を探し、
-;; find . -name ".elc"|xargs rm
-;; で、バイトコンパイル済みのファイルを削除
-;;(setq w3m-command "/opt/local/bin/w3m")
-;;(require 'w3m-load)
-;;M-x w3m
-;; で起動。Uでurlを入力できる。
-
-
+;;(global-set-key (kbd "s-f") 'do-searsh-from-other-window-string)

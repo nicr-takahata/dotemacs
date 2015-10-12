@@ -21,11 +21,14 @@
 ;; -cmd+opt+p: p
 ;; -cmd+opt+shift+p: p each lines
 ;;
+;; cmd+shift+a: タグを選択
+;; cmd+RET: <br />を入力
 ;; cmd+opt+r: タグを削除
 ;; cmd+opt+shift+r: タグを実体参照（or タグ）に
 ;;
 ;; cmd+opt+z: var_dump()
 ;; cmd+opt+shift+z: var_dump()でipを指定
+;; cmd+opt+k: 編集中のファイルのカレントパス
 ;;
 ;; cmd+/: 選択範囲を一行に
 ;; cmd+u: 選択範囲の全角数字を半角に
@@ -442,3 +445,18 @@
     (skip-chars-forward "^<>")
     (set-mark $pt)))
 (global-set-key (kbd "s-A") 'region-angle-brackets) ; cmd+shift+a
+
+;;; ------------------------------------------------------------
+;;; 選択範囲を[大文字|小文字|キャピタライズ]に
+(put 'upcase-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
+(global-set-key (kbd "s-U") 'upcase-region)
+(global-set-key (kbd "s-L") 'downcase-region)
+(global-set-key (kbd "s-C") 'capitalize-region)
+
+;;; ------------------------------------------------------------
+;;現在バッファのファイルのフルパスを取得
+(defun get-current-path ()
+  (interactive)
+  (insert (or (buffer-file-name) (expand-file-name default-directory))))
+(global-set-key (kbd "M-s-k") 'get-current-path)
