@@ -1,6 +1,41 @@
-;; thx http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
+;;; ------------------------------------------------------------
+;; 時代工房のウェブ制作用キーバインド集
+;; 基本的にはcmd+opt+(M-s-)となにか一文字で操作する
 
+;; cmd+opt+v: 任意のタグ
+;; -cmd+opt+a: anchor
+;; -cmd+opt+shift+5: anchor self
+;; -cmd+opt+1: h1
+;; -cmd+opt+2: h2
+;; -cmd+opt+3: h3
+;; -cmd+opt+4: h4
+;; -cmd+opt+5: h5
+;; -cmd+opt+6: h6
+;; -cmd+opt+t: table intaractive
+;; -cmd+opt+s: span
+;; -cmd+opt+g: strong
+;; -cmd+opt+u: ul
+;; -cmd+opt+o: ol
+;; -cmd+opt+d: dl
+;; -cmd+opt+q: blockquote
+;; -cmd+opt+p: p
+;; -cmd+opt+shift+p: p each lines
+;;
+;; cmd+opt+r: タグを削除
+;; cmd+opt+shift+r: タグを実体参照（or タグ）に
+;;
+;; cmd+opt+z: var_dump()
+;; cmd+opt+shift+z: var_dump()でipを指定
+;;
+;; cmd+/: 選択範囲を一行に
+;; cmd+u: 選択範囲の全角数字を半角に
+;; cmd+shift+u: 選択範囲をuppper case
+;; cmd+shift+l: 選択範囲をlower case
+;; cmd+shift+c: 選択範囲をcapitalize
+
+;;; ------------------------------------------------------------
 ;;; 選択範囲内の文字列置換
+;; thx http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
 (defun replace-strings-in-region-by-list ($list)
   "Replace strings in a region according to $list"
   (if mark-active
@@ -14,7 +49,9 @@
         (insert $word))
     (error "Need to make region")))
 
+;;; ------------------------------------------------------------
 ;;; dump-values
+;;; phpでvar_dump()するためのキーバインド
 (declare-function find "find" ($arg1 $arg2 $arg3 $arg4))
 (defun dump-values ($type $ip)
 	"insert html intaractive"
@@ -49,12 +86,21 @@
 	(dump-values "php" $ip))
 (global-set-key (kbd "s-M-Z") 'php-var-dump-ip) ; cmd-opt+shift+z
 
+;; JavaScript
+(defun javascript-console-log ()
+	(interactive)
+	(dump-values "javascript" ""))
+;;(global-set-key (kbd "s-M-z") 'javascript-console-log) ; cmd+opt+z
+
+;;; ------------------------------------------------------------
 ;;; 任意のタグ
+;;; ミニバッファにタグを入れると基本的には選択範囲を囲むタグを生成する
+;;; タグに応じて、いくらか振る舞いが変わる
 (declare-function convert-to-th "convert-to-th" ($arg))
 (declare-function convert-to-td "convert-to-td" ($arg))
 (defun any-html-tag ($tag)
 	"insert html intaractive"
-  (interactive "sTag: ")
+  (interactive "sTag (default \"div\"): ")
 	(let* (($beg (region-beginning))
 				 ($end (region-end))
 				 ($word (buffer-substring-no-properties $beg $end))
@@ -160,6 +206,19 @@
 				(if (find $type '("1" "3") :test #'string=)
 						(setq $tag (replace-regexp-in-string "<tr>\n\t<td>\\(.+?\\)</td>" "<tr>\n\t<th>\\1</th>" $tag))))
 
+			 ;; dl
+			 ((string-equal $tag "dl-dt-dd")
+				(setq $lines (split-string $word "\n"))
+				(while $lines
+					(if (string-equal (car $lines) "") nil
+						(progn
+							(if (string-match "\t" $word)
+									(setq $line (concat "<dt>" (replace-regexp-in-string "\t" "</dt>\n\t<dd>" (car $lines)) "</dd>\n"))
+								(setq $line (concat "<dt>" (car $lines) "</dd>\n")))))
+					(setq $html (concat $html $line))
+					(setq $lines (cdr $lines)))
+					(setq $tag (concat "<dl>\n" $html "</dl>\n")))
+
 			 ;; comment out
 			 ((string-equal $tag "comment-out")
 				(setq $tag (concat "<!-- " $word " -->")))
@@ -185,7 +244,10 @@
 				(setq $tag (concat "<label for=\"forStr\">\n" $word "\n</label>\n")))
 
 			 ;; specify tag
-			 (t (setq $tag (concat "<" $tag ">" $word "</" $tag ">"))))
+			 (t (if (string-equal $tag "")
+							(setq $tag "div")
+						(setq $tag $tag))
+					(setq $tag (concat "<" $tag ">" $word "</" $tag ">"))))
 
 			;; put tags
 			(if mark-active (delete-region $beg $end) nil)
@@ -254,6 +316,12 @@
 	(any-html-tag "comment-out"))
 (global-set-key (kbd "s-M-c") 'comment-out-tag) ; opt+cmd+c
 
+;;; blockquote
+(defun blockquote-tag ()
+	(interactive)
+	(any-html-tag "blockquote"))
+(global-set-key (kbd "s-M-q") 'blockquote-tag) ; opt+cmd+q
+
 ;;; p
 (defun p-tag ()
 	(interactive)
@@ -271,6 +339,12 @@
 	(interactive)
 	(any-html-tag "ol-li"))
 (global-set-key (kbd "s-M-o") 'ol-li-tag) ; opt+cmd+o
+
+;;; dl-dt-dd
+(defun dl-dt-dd-tag ()
+	(interactive)
+	(any-html-tag "dl-dt-dd"))
+(global-set-key (kbd "s-M-d") 'dl-dt-dd-tag) ; opt+cmd+d
 
 ;;; table
 (defun table-tag ()
@@ -327,6 +401,7 @@
 				(message "remove specified tag")))))
 (global-set-key (kbd "M-s-r") 'remove-html-tags) ; opt+cmd+r
 
+;;; ------------------------------------------------------------
 ;;; 全角数字を半角数字に
 (defun convert-to-single-byte-number ()
   "Convert multi-byte numbers in region into single-byte number"
@@ -344,6 +419,7 @@
      ("０" . "0"))))
 (global-set-key (kbd "s-u") 'convert-to-single-byte-number)
 
+;;; ------------------------------------------------------------
 ;;; 選択範囲を1行にする
 (defun join-multi-lines-to-one ()
   (interactive)
@@ -352,9 +428,11 @@
 (global-set-key [s-kp-divide] 'join-multi-lines-to-one) ; cmd+/
 (global-set-key (kbd "s-/") 'join-multi-lines-to-one) ; cmd+/
 
+;;; ------------------------------------------------------------
 ;;; Shift+Returnで<br />を入力
 (global-set-key [S-return] "<br />")
 
+;;; ------------------------------------------------------------
 ;;; HTML:タグとタグの間、またはタグ内を一気に選択
 (defun region-angle-brackets ()
   (interactive)
