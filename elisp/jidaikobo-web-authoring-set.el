@@ -267,21 +267,27 @@
 
 ;;; headings
 (defun h1-tag ()
+	"Add h1."
 	(interactive)
 	(any-html-tag "h1"))
 (defun h2-tag ()
+	"Add h2."
 	(interactive)
 	(any-html-tag "h2"))
 (defun h3-tag ()
+	"Add h3."
 	(interactive)
 	(any-html-tag "h3"))
 (defun h4-tag ()
+	"Add h4."
 	(interactive)
 	(any-html-tag "h4"))
 (defun h5-tag ()
+	"Add h4."
 	(interactive)
 	(any-html-tag "h5"))
 (defun h6-tag ()
+	"Add h6."
 	(interactive)
 	(any-html-tag "h6"))
 (global-set-key (kbd "s-M-1") 'h1-tag) ; opt+cmd+1
@@ -298,67 +304,58 @@
 (global-set-key [M-s-kp-6] 'h6-tag) ; opt+cmd+6
 
 ;;; a
-(defun a-tag ()
-	(interactive)
-	(any-html-tag "a"))
-(global-set-key (kbd "s-M-a") 'a-tag) ; opt+cmd+a
+(global-set-key (kbd "s-M-a") '(lambda ()
+																 (interactive)
+																 (any-html-tag "a"))) ; opt+cmd+a
 
 ;;; a-url
 (global-set-key (kbd "s-M-A") '(lambda ()
-																 (interactive) (any-html-tag "a-url"))) ; opt+cmd+shif+a
+																 (interactive)
+																 (any-html-tag "a-url"))) ; opt+cmd+shif+a
 ;;; strong
-(defun strong-tag ()
-	(interactive)
-	(any-html-tag "strong"))
-(global-set-key (kbd "s-M-g") 'strong-tag) ; opt+cmd+g
+(global-set-key (kbd "s-M-g") '(lambda ()
+																 (interactive)
+																 (any-html-tag "strong"))) ; opt+cmd+g
 
 ;;; span
-(defun span-tag ()
-	(interactive)
-	(any-html-tag "span"))
-(global-set-key (kbd "s-M-s") 'span-tag) ; opt+cmd+s
+(global-set-key (kbd "s-M-s") '(lambda ()
+																 (interactive)
+																 (any-html-tag "span"))) ; opt+cmd+s
 
 ;;; comment-out
-(defun comment-out-tag ()
-	(interactive)
-	(any-html-tag "comment-out"))
-(global-set-key (kbd "s-M-c") 'comment-out-tag) ; opt+cmd+c
+(global-set-key (kbd "s-M-c") '(lambda ()
+																 (interactive)
+																 (any-html-tag "comment-out"))) ; opt+cmd+c
 
 ;;; blockquote
-(defun blockquote-tag ()
-	(interactive)
-	(any-html-tag "blockquote"))
-(global-set-key (kbd "s-M-q") 'blockquote-tag) ; opt+cmd+q
+(global-set-key (kbd "s-M-q") '(lambda ()
+																 (interactive)
+																 (any-html-tag "blockquote"))) ; opt+cmd+q
 
 ;;; p
-(defun p-tag ()
-	(interactive)
-	(any-html-tag "p-each"))
-(global-set-key (kbd "s-M-p") 'p-tag) ; opt+cmd+p
+(global-set-key (kbd "s-M-p") '(lambda ()
+																 (interactive)
+																 (any-html-tag "p-each"))) ; opt+cmd+p
 
 ;;; ul-li
-(defun ul-li-tag ()
-	(interactive)
-	(any-html-tag "ul-li"))
-(global-set-key (kbd "s-M-u") 'ul-li-tag) ; opt+cmd+u
+(global-set-key (kbd "s-M-u") '(lambda ()
+																 (interactive)
+																 (any-html-tag "ul-li"))) ; opt+cmd+u
 
 ;;; ol-li
-(defun ol-li-tag ()
-	(interactive)
-	(any-html-tag "ol-li"))
-(global-set-key (kbd "s-M-o") 'ol-li-tag) ; opt+cmd+o
+(global-set-key (kbd "s-M-o") '(lambda ()
+																 (interactive)
+																 (any-html-tag "ol-li"))) ; opt+cmd+o
 
 ;;; dl-dt-dd
-(defun dl-dt-dd-tag ()
-	(interactive)
-	(any-html-tag "dl-dt-dd"))
-(global-set-key (kbd "s-M-d") 'dl-dt-dd-tag) ; opt+cmd+d
+(global-set-key (kbd "s-M-d") '(lambda ()
+																 (interactive)
+																 (any-html-tag "dl-dt-dd"))) ; opt+cmd+d
 
 ;;; table
-(defun table-tag ()
-	(interactive)
-	(any-html-tag "table"))
-(global-set-key (kbd "s-M-t") 'table-tag) ; opt+cmd+t
+(global-set-key (kbd "s-M-t") '(lambda ()
+																 (interactive)
+																 (any-html-tag "table"))) ; opt+cmd+t
 
 ;;; remove-html-tags
 (defun remove-html-tags ($tag)
