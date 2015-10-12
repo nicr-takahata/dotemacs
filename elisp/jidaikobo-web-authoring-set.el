@@ -304,11 +304,8 @@
 (global-set-key (kbd "s-M-a") 'a-tag) ; opt+cmd+a
 
 ;;; a-url
-(defun a-url-tag ()
-	(interactive)
-	(any-html-tag "a-url"))
-(global-set-key (kbd "s-M-A") 'a-url-tag) ; opt+cmd+shif+a
-
+(global-set-key (kbd "s-M-A") '(lambda ()
+																 (interactive) (any-html-tag "a-url"))) ; opt+cmd+shif+a
 ;;; strong
 (defun strong-tag ()
 	(interactive)
