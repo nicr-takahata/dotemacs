@@ -1,0 +1,366 @@
+ALTER TABLE TABLE_NAME ADD `is_bool` INTEGER NOT NULL DEFAULT 0 AFTER `foo`
+ALTER TABLE TABLE_NAME CHANGE `COLUMN` `COLUMN` INTEGER NOT NULL DEFAULT 0
+ALTER TABLE TABLE_NAME auto_increment=1;
+AUTO_INCREMENT
+CREATE TABLE TABLE_NAME (id INTEGER PRIMARY KEY, body TEXT NOT NULL DEFAULT '');
+DELETE FROM TABLE_NAME WHERE
+INSERT INTO TABLE_NAME (field_name1, field_name2) VALUES ('value1', 'value2');
+SELECT * FROM TABLE_NAME WHERE `foo` = '1';
+UPDATE TABLE_NAME SET `column` = REPLACE(column, 'Foo', 'FooBar') ;
+UPDATE TABLE_NAME SET `field_name1` = 'value1',`field_name2` = 'value2' WHERE `id` = ?;
+UPDATE sqlite_sequence SET `seq` = 1 WHERE `name` = 'TABLE_NAME';
+
+JIS
+JIS Q 15001（個人情報保護マネジメントシステム-要求事項）
+JIS X 8341-3
+JIS X 8341-3:2010「高齢者・障害者等配慮設計指針 - 情報通信における機器、ソフトウェア及びサービス−第三部: ウェブコンテンツ」
+
+Acrobat
+Acrobat Reader
+ActiveX
+Adobe
+Amazon Associate
+BIGLOBE
+Camino
+Creative Suite
+Cyberduck
+Dreamweaver
+FCKeditor
+Facebook
+FocusTalk
+Frickr
+Google
+Google Analytics
+Google Earth
+Google Map
+Google Sitemap
+GyazMail
+IBM
+IBM Homepage Reader
+IBM Homepage builder
+IPA
+Illustrator
+InDesign
+Infoseek
+JAWS
+Jedit X
+Keyboard Maestro
+Mac OS X
+MacBook
+MacBook Air
+Macintosh
+Macromedia
+Microsoft
+Mixi
+Movable Type
+Mozilla
+Netscape
+Netscape Navigator
+Nucleus
+OpenOffice
+Opera
+PC Talker
+PayPal
+Photoshop
+Photoshop Elements
+Picasa
+Podcast
+PowerBook
+PowerPC
+QuickTime
+RealPlayer
+Safari
+Samba
+SimpleText
+Skype
+SourceForge
+SpamAssassin
+StuffIt Expander
+Tiny MCE
+Twitter
+Visual Basic
+Vodafone
+VoiceOver
+W3C
+W3C - World Wide Web Consortium
+WAI
+WCAG
+Web Accessibility Initiative
+Web Content Accessibility Guidelines
+Wikipedia
+Windows
+WordPress
+World Wide Web Consortium
+XP Reader
+XPReader
+Yahoo!
+Yahoo! Japan
+Yahoo! Site Explorer
+YouTube
+facebook
+gmail.com
+i-mode
+iMac
+iPad
+iPhone
+iPod
+iPod mini
+iPod nano
+iPod shuffle
+iPod touch
+iTunes
+iTunes Music Store
+lhasa
+
+ASC
+ASCII
+ASP
+ActionScript
+Ajax
+Apache
+AppleTalk
+Applescript
+BSD
+Bluetooth
+CSS
+CSV
+CUI
+CVS
+Cascading Style Sheets
+Cross Site Scripting
+Curl
+DESC
+FALSE
+FTP
+Fedora Core
+Fetch
+FreeBSD
+GNU
+GNU Library Public License
+GNU 一般公的使用許諾
+HTML
+HTTP
+HyperText Markup Language
+IPv4
+IPv6
+ISO
+ISO 14001
+ISO 9001
+JPEG
+Java
+JavaScript
+KNOPPIX
+Konqueror
+LAN
+LibreOffice
+Linux
+MECE (Mutually Exclusive collectively Exhaustive)
+MySQL
+NS
+NULL
+OpenType
+PDF
+POP before SMTP
+PageRank
+Perl
+PostgreSQL
+QUERY_STRING
+RAID
+RDF - Resource Description Framework
+RSS
+RSS - RDF Site Summary
+RSS - Really Simple Syndication
+RSS - Rich Site Summary
+Red Hat Linux
+Rendezvous
+Ruby
+Ruby on Rails
+SERVER
+SESSION
+SQL
+SQL injection
+SSL
+SVN
+SaaS
+SaaS - Software as a Service
+TRUE
+TWAIN
+TeX
+TrueType
+UML
+UML - Unified Modeling Language
+UNIX
+UTF-8
+Unicode
+User Agent
+VoIP
+WYSIWYG - What You See Is What You Get
+XHTML
+XML
+XSS
+accesskey
+acronym
+address
+addslashes
+aggregate
+align
+alt
+amazon
+analytics
+applet
+archive
+area
+asin
+assert
+baz
+bootstrap
+bootstrap
+box-sizing: border-box
+browser
+button
+capitalize
+caption
+categorize
+collector
+config
+crypt
+css
+csv
+current
+cursor
+cvs
+dashboard
+e-commerce
+e-learning
+e-mail
+example.com
+example@example.com
+exception
+false
+favicon
+font
+ftp
+garbage collector
+guid
+hoge
+html
+http
+http-equiv
+http://
+httpd
+id
+if
+index.html
+index.php
+ip
+jQuery
+jQuery (function(){ });
+javascript
+journal
+key
+localhost
+mail
+mailto
+media
+menu
+meta
+metaphone
+method
+migrate
+migration
+mkdir
+modifier
+multiple
+nil
+object
+override
+parent
+pdf
+phishing
+php
+phpMyAdmin
+pi
+prefix
+print
+privacy
+privacypolicy
+radio button
+recruit
+rsync
+scroll
+scrollable
+session
+sin
+sitemap
+sitepolicy
+size
+smartphone
+smb://
+spacify
+sqlite
+ssh
+start
+static
+style
+stylesheet
+submit
+svn
+switch
+symlink
+table
+table-layout
+tan
+tanh
+tar
+tar.gz
+target
+telnet
+text
+text/css
+text/html
+text/javascript
+text/plain
+text/richtext
+text/xml
+text/xsl
+textarea
+th
+thead
+thesis
+this
+time
+timtowtdi - There is more than one way to do it
+title
+toggle
+token
+top
+toppage
+true
+truncate
+try
+twitter
+type
+underline
+urldecode
+urlencode
+usage
+use
+val
+vals
+value
+var
+variant
+version
+virtual
+virtualhost
+visibility
+visited
+volume
+while
+windows
+www.example.com
+xhtml
+xml
+xor
+z-index
+zoom
