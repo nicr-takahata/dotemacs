@@ -1,7 +1,11 @@
-;;; init.el by jidaikobo-shibata
-;;; thx 『Emacs実践入門』
-;;; thx http://rubikitch.com
+;;; init.el --- init.el for jidaikobo
+;; Copyright (C) 2015 by jidaikobo-shibata
+;; Author: jidaikobo
+;; URL: https://github.com/jidaikobo-shibata/dotemacs
+;; thx 『Emacs実践入門』
+;; thx http://rubikitch.com
 
+;;; Commentary:
 ;;; ------------------------------------------------------------
 ;;; usage: emacsのインストール（要X-code Command Line Tools）
 ;;; thx http://masutaka.net/chalow/2015-04-12-1.html
@@ -64,11 +68,13 @@
 ;; M-x package-install RET multiple-cursors RET
 ;; M-x package-install RET smartrep RET
 ;; M-x package-install RET flycheck RET
+;; M-x package-install RET php-mode RET
 
 ;;; ------------------------------------------------------------
 ;;; package類のロード等
 
 ;;; load-pathの追加
+;;; Code:
 (add-to-list 'load-path "~/.emacs.d/elisp")
 
 ;;; auto-install
@@ -86,6 +92,10 @@
 (add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/") t)
 (package-initialize)
 
+;; mode
+(require 'php-mode)
+(require 'web-mode)
+
 ;;; undohist
 ;; ファイルを閉じてもundoの履歴を残す
 (require 'undohist)
@@ -102,6 +112,9 @@
 ;;; flycheck
 (load "flycheck")
 (add-hook 'after-init-hook #'global-flycheck-mode)
+(add-hook 'php-mode-hook 'flycheck-mode)
+(global-set-key [M-up] 'flycheck-previous-error) ; previous error (M+up)
+(global-set-key [M-down] 'flycheck-next-error) ; next error (M+down)
 
 ;;; recentf
 ;; 最近開いたファイルの履歴
@@ -123,10 +136,6 @@
 ;; https://github.com/rejeep/f.el
 ;; ファイル処理の関数群
 (require 'f)
-
-;;; web-mode
-;; テンプレート編集時のモード
-(require 'web-mode)
 
 ;;; duplicate-region
 ;; 行／選択範囲の複製 (cmd+d)
@@ -210,16 +219,13 @@
 (define-key isearch-mode-map "\e" 'isearch-abort) ; \e seems to work better for terminals
 (global-set-key [escape] 'keyboard-escape-quit) ; everywhere else
 
-;;; temporary
-(global-set-key [M-up] 'previous-line)
-(define-key global-map [M-down] 'next-line)
-
 ;;; ------------------------------------------------------------
 ;;;バッファ操作
 
 ;;; create-temporary-buffer
 ;; あたらしい空のバッファを作る (cmd+t)
 (defun create-temporary-buffer ()
+	"Create temporal buffer."
   (interactive)
   (switch-to-buffer (generate-new-buffer "*temp*")))
 (define-key global-map (kbd "s-t") 'create-temporary-buffer) ; (cmd+t)
@@ -236,6 +242,7 @@
   '((t (:foreground "wheat" :underline t))) nil)
 
 (defun my-visible-buffers (blst)
+	"My visible buffers.  BLST."
 	(interactive)
   (if (eq blst nil) '()
     (let ((bufn (buffer-name (car blst))))
@@ -245,6 +252,7 @@
         (cons (car blst) (my-visible-buffers (cdr blst)))))))
 
 (defun my-show-buffer-list (prompt spliter)
+	"My show buffer list.  PROMPT, SPLITER."
 	(interactive)
   (let* ((len (string-width prompt))
          (str (mapconcat
@@ -283,27 +291,30 @@
 ;;; フレーム設定ウィンドウ操作
 
 ;;; mac like close window (cmd+w)
-;; cmd+wで、開いているウィンドウを閉じる。単一のバッファなら、バッファを閉じる
+;; cmd+wで、開いているウィンドウを閉じる。単一のバッファなら、変更を確認してバッファを閉じる
 (defun contexual-close-window ()
-	"mac like close window (cmd+w)."
+	"Mac like close window (cmd+w)."
 	(interactive)
 	(let ($save)
 		(if (one-window-p)
 				(if (buffer-modified-p)
 						(progn
-							(setq $save (read-string "overwrite? (1:overrite, 2:save as): " nil 'my-history))
+							(setq $save (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
 							(cond
+							 ((string-equal $save "1")
+								(save-buffer))
 							 ((string-equal $save "2")
-								(call-interactively 'write-file))
-							 (t (save-buffer)))
-					(kill-buffer)))
+								(progn (call-interactively 'write-file)
+											 (save-buffer))))
+							(kill-buffer))
+					(kill-buffer))
 		(delete-window))))
 (global-set-key (kbd "s-w") 'contexual-close-window)
 
 ;;; mac like new window (cmd+n)
 ;; cmd+n でウィンドウを増やす。分割方法は対話式
 (defun create-new-window-intaractive (act)
-	"mac like new window (cmd+n)."
+	"Mac like new window (cmd+n).  ACT is interactive."
   (interactive "nchoose (holizntal:1, vertical:2):")
 	(cond ((eq act 2) (split-window-horizontally))
 				(t (split-window-vertically))))
@@ -311,7 +322,7 @@
 
 ;;; フレームの大きさと色を変更 (cmd+shift+w)
 (defun resize-selected-frame ()
-	"resize frame to jidaikobo's default"
+	"Resize frame to jidaikobo's default."
 	(interactive)
 	(set-frame-position  (selected-frame) 15 0)
 	(set-frame-size (selected-frame) 215 55))
@@ -551,9 +562,11 @@
 ;; experiment area
 
 (defun do-searsh-from-other-window-string ()
-	"mac like new window (cmd+n)."
+	"Mac like new window (cmd+n)."
   (interactive)
 	(split-window-horizontally)
 	(split-window-vertically)
 )
 ;;(global-set-key (kbd "s-f") 'do-searsh-from-other-window-string)
+
+;;; init.el ends here
