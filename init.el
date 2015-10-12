@@ -70,11 +70,12 @@
 ;; M-x package-install RET flycheck RET
 ;; M-x package-install RET php-mode RET
 
+;;; Code:
+
 ;;; ------------------------------------------------------------
 ;;; package類のロード等
 
 ;;; load-pathの追加
-;;; Code:
 (add-to-list 'load-path "~/.emacs.d/elisp")
 
 ;;; auto-install
