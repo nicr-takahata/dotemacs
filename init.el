@@ -133,10 +133,6 @@
 ;; ファイル処理の関数群
 (require 'f)
 
-;;; duplicate-region
-;; 行／選択範囲の複製 (cmd+d)
-(require 'duplicate-region)
-
 ;;; cursor-chg
 ;; カーソルの形状を変更
 (require 'cursor-chg)
@@ -160,15 +156,19 @@
 (require 'smartrep)
 
 ;;; multi-term
-(load "init-multi-term")
+(require 'init-multi-term)
 
 ;;; google-translate
 ;; 選択範囲の言語を確認して翻訳 (C-c t)
-(load "init-google-translate")
+(require 'init-google-translate)
 
 ;;; auto-complete
 ;; オートコンプリート
-(load "init-auto-complete")
+(require 'init-auto-complete)
+
+;;; duplicate-region
+;; 行／選択範囲の複製 (cmd+d)
+(require 'init-duplicate-region)
 
 ;;; auto-async-byte-compile
 ;; .el自動コンパイルファイルを保存時に自動でバイトコンパイル。init.elを除く
