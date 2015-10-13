@@ -156,19 +156,19 @@
 (require 'smartrep)
 
 ;;; multi-term
-(require 'init-multi-term)
+(load "init-multi-term")
 
 ;;; google-translate
 ;; 選択範囲の言語を確認して翻訳 (C-c t)
-(require 'init-google-translate)
+(load "init-google-translate")
 
 ;;; auto-complete
 ;; オートコンプリート
-(require 'init-auto-complete)
+(load "init-auto-complete")
 
 ;;; duplicate-region
 ;; 行／選択範囲の複製 (cmd+d)
-(require 'init-duplicate-region)
+(load "init-duplicate-region")
 
 ;;; auto-async-byte-compile
 ;; .el自動コンパイルファイルを保存時に自動でバイトコンパイル。init.elを除く
