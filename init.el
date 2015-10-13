@@ -36,6 +36,7 @@
 ;; mkdir -p ~/.emacs.d/elisp
 ;; cd ~/.emacs.d/elisp
 ;; curl -0 http://www.emacswiki.org/emacs/download/auto-install.el
+;; wget http://www.ne.jp/asahi/alpha/kazu/pub/emacs/phpdoc.el
 ;;; @ emacs
 ;;; S式はC-x C-eで反映すること
 ;;; 下記コマンド類はM-;でコメントを外してからやるとよい
@@ -69,6 +70,9 @@
 ;; M-x package-install RET smartrep RET
 ;; M-x package-install RET flycheck RET
 ;; M-x package-install RET php-mode RET
+;; M-x install-elisp-from-emacswiki RET tempbuf.el RET
+;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
+;; http://www.ne.jp/asahi/alpha/kazu/php.html
 
 ;;; Code:
 
@@ -112,10 +116,18 @@
 (global-set-key [M-up] 'flycheck-previous-error) ; previous error (M+up)
 (global-set-key [M-down] 'flycheck-next-error) ; next error (M+down)
 
+;;; tempbuf
+;; 使わないバッファを自動的に消す
+(require 'tempbuf)
+(add-hook 'find-file-hooks 'turn-on-tempbuf-mode)
+(add-hook 'dired-mode-hook 'turn-on-tempbuf-mode)
+
 ;;; recentf
 ;; 最近開いたファイルの履歴
 (require 'recentf-ext)
 (recentf-mode 1)
+(setq recentf-exclude '(".recentf" "~/Library/Caches/Cleanup At Startup/com.fetchsoftworks.Fetch/Fetch Temporary Folder/"))
+(setq recentf-max-saved-items 3000)
 
 ;;; Anything
 ;; C-;
@@ -154,6 +166,21 @@
 ;;; smartrep
 ;; 連続操作
 (require 'smartrep)
+
+;;; eldoc
+(require 'eldoc-extension)
+(add-hook 'emacs-lisp-mode-hook 'turn-on-eldoc-mode)
+(add-hook 'lisp-interaction-mode-hook 'turn-on-eldoc-mode)
+(setq eldoc-idle-delay 0.2)
+(setq eldoc-minor-mode-string "")
+
+;;; 関数名の表示
+(which-func-mode 1)
+
+;;; eldoc-php
+;; thx http://www.ne.jp/asahi/alpha/kazu/php.html
+(require 'phpdoc)
+(add-hook 'php-mode-hook (lambda () (eldoc-mode t)))
 
 ;;; multi-term
 (load "init-multi-term")
@@ -350,6 +377,7 @@
 ;;; 行番号を表示する
 ;; 表示切替はM-x wb-line-number-toggleと入力。
 (defun show-line-number ()
+	"Show line number."
 	(interactive)
 	(require 'linum)
 	(global-linum-mode t)
@@ -419,19 +447,19 @@
 (global-unset-key "\C-t")
 
 (smartrep-define-key global-map "C-t"
-  '(("C-t"      . 'mc/mark-next-like-this)
-    ("n"        . 'mc/mark-next-like-this)
-    ("p"        . 'mc/mark-previous-like-this)
-    ("m"        . 'mc/mark-more-like-this-extended)
-    ("u"        . 'mc/unmark-next-like-this)
-    ("U"        . 'mc/unmark-previous-like-this)
-    ("s"        . 'mc/skip-to-next-like-this)
-    ("S"        . 'mc/skip-to-previous-like-this)
-    ("*"        . 'mc/mark-all-like-this)
-    ("d"        . 'mc/mark-all-like-this-dwim)
-    ("i"        . 'mc/insert-numbers)
-    ("o"        . 'mc/sort-regions)
-    ("O"        . 'mc/reverse-regions)))
+  '(("C-t"  . 'mc/mark-next-like-this)
+    ("n"    . 'mc/mark-next-like-this)
+    ("p"    . 'mc/mark-previous-like-this)
+    ("m"    . 'mc/mark-more-like-this-extended)
+    ("u"    . 'mc/unmark-next-like-this)
+    ("U"    . 'mc/unmark-previous-like-this)
+    ("s"    . 'mc/skip-to-next-like-this)
+    ("S"    . 'mc/skip-to-previous-like-this)
+    ("*"    . 'mc/mark-all-like-this)
+    ("d"    . 'mc/mark-all-like-this-dwim)
+    ("i"    . 'mc/insert-numbers)
+    ("o"    . 'mc/sort-regions)
+    ("O"    . 'mc/reverse-regions)))
 
 ;;; ------------------------------------------------------------
 ;; マウス設定
@@ -549,6 +577,10 @@
 
 ;;; 釣り合いのとれる括弧のハイライト
 (show-paren-mode 1)
+
+;;; wdired
+;; diredでファイル編集
+(define-key dired-mode-map "r" 'wdired-change-to-wdired-mode)
 
 ;;; elscreen
 ;(require 'elscreen)
