@@ -84,13 +84,11 @@
 (auto-install-update-emacswiki-package-name t)
 (auto-install-compatibility-setup)
 
-(setq ediff-window-setup-function 'ediff-setup-windows-plain)
-
 ;;; package
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/") t)
-(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/") t)
+(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
 (package-initialize)
 
 ;; mode
@@ -106,9 +104,6 @@
 ;; redo (cmd+shft+z)
 (require 'undo-tree)
 (global-undo-tree-mode t)
-
-;;; multi-term
-(load "multi-term-init")
 
 ;;; flycheck
 (load "flycheck")
@@ -152,14 +147,6 @@
 (require 'smart-tab)
 (global-smart-tab-mode)
 
-;;; google-translate
-;; 選択範囲の言語を確認して翻訳 (C-c t)
-(load "google-translate-init")
-
-;;; auto-complete
-;; オートコンプリート
-(load "auto-complete-init")
-
 ;;; point-undo
 ;; カーソル位置履歴 (undo: M-s-left, redo: M-s-right)
 (require 'point-undo)
@@ -171,6 +158,17 @@
 ;;; smartrep
 ;; 連続操作
 (require 'smartrep)
+
+;;; multi-term
+(load "init-multi-term")
+
+;;; google-translate
+;; 選択範囲の言語を確認して翻訳 (C-c t)
+(load "init-google-translate")
+
+;;; auto-complete
+;; オートコンプリート
+(load "init-auto-complete")
 
 ;;; auto-async-byte-compile
 ;; .el自動コンパイルファイルを保存時に自動でバイトコンパイル。init.elを除く
