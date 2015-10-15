@@ -52,11 +52,11 @@
   (if mark-active
       (let* (($beg (region-beginning))
              ($end (region-end))
-             ($word (buffer-substring-no-properties $beg $end)))
+						 ($word (buffer-substring-no-properties $beg $end)))
         (mapc (lambda ($r)
-                (setq $word (replace-regexp-in-string (car $r) (cdr $r) $word)))
+								(setq $word (replace-regexp-in-string (car $r) (cdr $r) $word)))
               $list)
-        (delete-region $beg $end)
+				(delete-region $beg $end)
         (insert $word))
     (error "Need to make region")))
 
@@ -104,13 +104,34 @@
 ;;(global-set-key (kbd "s-M-z") 'javascript-console-log) ; cmd+opt+z
 
 ;;; ------------------------------------------------------------
+;;; php open and close
+(defun put-php-opener-closer (type)
+	"Put php opner and closer.  choose TYPE."
+	(interactive "nType 1:<?php ?>, 2:<?php(RET)?>, 3:?><?php:")
+	(let* ((beg (if mark-active (region-beginning) (point)))
+				(end (if mark-active (region-end) (point)))
+				(word (if mark-active (buffer-substring-no-properties beg end) ""))
+				(ret))
+		(cond
+		 ((eq type 2)
+			(setq ret (concat "<?php\n" word "\n?>")))
+		 ((eq type 3)
+			(setq ret (concat "?>" word "<?php")))
+		 (t
+			(if (/= (length word) 0) (setq word (concat word " ")) word)
+			(setq ret (concat "<?php " word "?>"))))
+		(if mark-active (delete-region beg end) nil)
+		(insert ret)))
+(global-set-key (kbd "s-M-h") 'put-php-opener-closer) ; cmd+shift+h
+
+;;; ------------------------------------------------------------
 ;;; 任意のタグ
 ;;; ミニバッファにタグを入れると基本的には選択範囲を囲むタグを生成する
 ;;; タグに応じて、いくらか振る舞いが変わる
 (declare-function convert-to-th "convert-to-th" ($arg))
 (declare-function convert-to-td "convert-to-td" ($arg))
 (defun any-html-tag ($tag)
-	"insert html intaractive"
+	"Insert html intaractive.  $TAG."
   (interactive "sTag (default \"div\"): ")
 	(let* (($beg (region-beginning))
 				 ($end (region-end))
@@ -134,7 +155,7 @@
 					(setq $tag (concat "<a href=\"" $word "\">" $word "</a>"))))
 			 ;; input
 			 ((string-equal $tag "input")
-				(setq $type (read-string "type (1:text, 2:hidden, 3:radio, 4:checkbox, 5:submit, 6:password, 7:image, 8:file): " nil 'my-history))
+				(setq $type (read-number "type (1:text, 2:hidden, 3:radio, 4:checkbox, 5:submit, 6:password, 7:image, 8:file): " nil))
 				(cond
 				 ((string-equal $type "1")
 					(setq $tag "<input type=\"text\" name=\"nameStr\" id=\"idStr\" size=\"20\" value=\"\" />"))

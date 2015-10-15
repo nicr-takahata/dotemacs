@@ -126,7 +126,7 @@
 ;; 最近開いたファイルの履歴
 (require 'recentf-ext)
 (recentf-mode 1)
-(setq recentf-exclude '(".recentf" "~/Library/Caches/Cleanup At Startup/com.fetchsoftworks.Fetch/Fetch Temporary Folder/"))
+(setq recentf-exclude '("/TAGS$" "/var/tmp/" ".recentf" "/Fetch Temporary Folder/"))
 (setq recentf-max-saved-items 3000)
 
 ;;; Anything
@@ -217,11 +217,11 @@
 (global-set-key (kbd "s-s") 'save-buffer) ; save (cmd+s)
 (global-set-key (kbd "s-S") 'write-file) ; save as (cmd+shift+s)
 (global-set-key (kbd "s-o") 'find-file) ; open (cmd+o)
-(global-set-key (kbd "s-f") 'isearch-forward) ; search (cmd+f)
-(global-set-key (kbd "s-g") 'isearch-repeat-forward) ; search forward (cmd+g)
-(global-set-key (kbd "s-G") 'isearch-repeat-backward) ; search backword (cmd+shift+g)
-(global-set-key (kbd "s-e") 'isearch-yank-x-selection) ; set search word (cmd+e)
-(global-set-key (kbd "C-r") 'isearch-toggle-regexp) ; toggle regrex at search (c-s)
+;; (global-set-key (kbd "s-f") 'isearch-forward) ; search (cmd+f)
+;; (global-set-key (kbd "s-g") 'isearch-repeat-forward) ; search forward (cmd+g)
+;; (global-set-key (kbd "s-G") 'isearch-repeat-backward) ; search backword (cmd+shift+g)
+;; (global-set-key (kbd "s-e") 'isearch-yank-x-selection) ; set search word (cmd+e)
+;; (global-set-key (kbd "C-r") 'isearch-toggle-regexp) ; toggle regrex at search (c-s)
 (global-set-key (kbd "s-z") 'undo-tree-undo) ; undo (cmd+z)
 (global-set-key (kbd "s-Z") 'undo-tree-redo) ; redo (cmd+shift+z)
 (global-set-key (kbd "s-+") 'text-scale-increase) ; resize increase (cmd++)
@@ -253,7 +253,7 @@
 (defun create-temporary-buffer ()
 	"Create temporal buffer."
   (interactive)
-  (switch-to-buffer (generate-new-buffer "*temp*")))
+  (switch-to-buffer (generate-new-buffer "new")))
 (define-key global-map (kbd "s-t") 'create-temporary-buffer) ; (cmd+t)
 
 ;; 前後のバッファ
@@ -322,19 +322,27 @@
 	"Mac like close window (cmd+w)."
 	(interactive)
 	(let ($save)
-		(if (one-window-p)
-				(if (buffer-modified-p)
-						(progn
-							(setq $save (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
-							(cond
-							 ((string-equal $save "1")
-								(save-buffer))
-							 ((string-equal $save "2")
-								(progn (call-interactively 'write-file)
-											 (save-buffer))))
-							(kill-buffer))
-					(kill-buffer))
-		(delete-window))))
+		;; アスタリスクで始まるバッファは何も尋ねず閉じる
+		(if (string= "*" (substring (buffer-name) 0 1))
+				(kill-buffer)
+			;; バッファがウインドウ分割をしている時は、単にdelete-windowする
+			(if (one-window-p)
+					;; バッファがウインドウ分割をしていない時には、変更の有無を確認
+					(if (buffer-modified-p)
+							;; 変更があるので振る舞いを尋ねる
+							(progn
+								(setq $save (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
+								(cond
+								 ((string-equal $save "1")
+									(save-buffer))
+								 ((string-equal $save "2")
+									(progn (call-interactively 'write-file)
+												 (save-buffer))))
+								(kill-buffer))
+						;; 変更がないのでkill-buffer
+						(kill-buffer)))
+			;; ウィンドウ分割されていないので、delete-window
+			(delete-window))))
 (global-set-key (kbd "s-w") 'contexual-close-window)
 
 ;;; mac like new window (cmd+n)
@@ -537,7 +545,7 @@
 (tool-bar-mode -1)
 
 ;;; タイトルバーにファイル名表示
-(setq frame-title-format (format "%%f - Emacs@%s" (system-name)))
+(setq frame-title-format (format "%%f %%* Emacs@%s" (system-name)))
 
 ;;; 何文字目にいるか表示
 (column-number-mode 1)
@@ -592,12 +600,64 @@
 ;; -------------------------------------------------
 ;; experiment area
 
-(defun do-searsh-from-other-window-string ()
-	"Mac like new window (cmd+n)."
-  (interactive)
+;; 検索置換用のマイナーモードを設定する
+;; (define-minor-mode editable-search-mode
+;; 	"provide editable search/replace environment"
+;; 	:init-value
+;; 	nil
+;; 	:lighter
+;; 	" Search"
+;; 	:keymap
+;; 	'((, (kbd "ESC") . (lambda ()
+;; 											 (interactive) (
+;; 																			(select-window (get-buffer-window "*search string*"))
+;; 																			(delete-window)
+;; 																			)))))
+
+;; 検索と置換用のバッファを用意する
+(defun split-window-for-search-and-replace ()
+	"Split window for search and replace."
+	(interactive)
 	(split-window-horizontally)
+	(select-window (next-window))
+	(switch-to-buffer "*search string*")
 	(split-window-vertically)
-)
-;;(global-set-key (kbd "s-f") 'do-searsh-from-other-window-string)
+	(select-window (next-window))
+	(switch-to-buffer "*replace string*")
+	(select-window (previous-window))
+	)
+(define-key global-map (kbd "s-f") 'split-window-for-search-and-replace)
+
+;; 検索用バッファの文字列で検索する
+(defun do-searsh-from-other-window-string (mode)
+	"Do search from other window string.  MODE [next|prev|rex-next|rex-prev|replace-next|replace-prev|re-replace-next|re-replace-prev]."
+	(interactive)
+	(with-selected-window (get-buffer-window "*search string*")
+		(setq search-strings (buffer-string)))
+	(setq len-search-string (length search-strings))
+	(cond
+	 ((string= mode "next")
+		(search-forward search-strings)
+		;; (goto-char (match-beginning 1))
+		;; (set-mark (point))
+		;; (goto-char (match-end 1)))
+		(goto-char (- (point) len-search-string))
+		(set-mark (point))
+		(goto-char (+ (point) len-search-string)))
+	 ((string= mode "prev")
+		(search-backward search-strings)
+		(goto-char (+ (point) len-search-string))
+		(set-mark (point))
+		(goto-char (- (point) len-search-string))))
+	
+	;; (deactivate-mark)
+	;; (setq end (point))
+	;; (set-marker (make-marker) (- (point) len-search-string))
+	;; (message "%s - %s" bgn end)
+	)
+
+
+(define-key global-map (kbd "s-g") (lambda () (interactive) (do-searsh-from-other-window-string "next")))
+(define-key global-map (kbd "s-G") (lambda () (interactive) (do-searsh-from-other-window-string "prev")))
 
 ;;; init.el ends here
