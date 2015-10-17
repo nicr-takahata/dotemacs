@@ -26,10 +26,6 @@
 ;; cp -r mac/Emacs.app ~/Applications
 
 ;;; ------------------------------------------------------------
-;;; usage: init.elの反映
-;; M-x eval-buffer RET init.el
-
-;;; ------------------------------------------------------------
 ;;; usage: 利用前の準備
 ;;; このinit.elを~/.emacs.dに入れる前に、以下手順を踏んでおくこと。
 ;;; @ terminal
@@ -70,9 +66,14 @@
 ;; M-x package-install RET smartrep RET
 ;; M-x package-install RET flycheck RET
 ;; M-x package-install RET php-mode RET
-;; M-x install-elisp-from-emacswiki RET tempbuf.el RET
+;; M-x package-install RET mic-paren RET
 ;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
 ;; http://www.ne.jp/asahi/alpha/kazu/php.html
+
+;;; メモ
+;; tempbuf（idle buffer）を自動的にkill-bufferしてくれるelispだけど、
+;; 結構不意に必要なbufferをkillしていることがあるので、使わない方向で。
+;; M-x install-elisp-from-emacswiki RET tempbuf.el RET
 
 ;;; Code:
 
@@ -116,12 +117,6 @@
 (global-set-key [M-up] 'flycheck-previous-error) ; previous error (M+up)
 (global-set-key [M-down] 'flycheck-next-error) ; next error (M+down)
 
-;;; tempbuf
-;; 使わないバッファを自動的に消す
-(require 'tempbuf)
-(add-hook 'find-file-hooks 'turn-on-tempbuf-mode)
-(add-hook 'dired-mode-hook 'turn-on-tempbuf-mode)
-
 ;;; recentf
 ;; 最近開いたファイルの履歴
 (require 'recentf-ext)
@@ -148,7 +143,7 @@
 ;;; cursor-chg
 ;; カーソルの形状を変更
 (require 'cursor-chg)
-(toggle-cursor-type-when-idle 1)
+(toggle-cursor-type-when-idle 0)
 
 ;;; smart-tab
 ;; コンテキストに応じたtabキー。auto-completeと共存
@@ -217,11 +212,6 @@
 (global-set-key (kbd "s-s") 'save-buffer) ; save (cmd+s)
 (global-set-key (kbd "s-S") 'write-file) ; save as (cmd+shift+s)
 (global-set-key (kbd "s-o") 'find-file) ; open (cmd+o)
-;; (global-set-key (kbd "s-f") 'isearch-forward) ; search (cmd+f)
-;; (global-set-key (kbd "s-g") 'isearch-repeat-forward) ; search forward (cmd+g)
-;; (global-set-key (kbd "s-G") 'isearch-repeat-backward) ; search backword (cmd+shift+g)
-;; (global-set-key (kbd "s-e") 'isearch-yank-x-selection) ; set search word (cmd+e)
-;; (global-set-key (kbd "C-r") 'isearch-toggle-regexp) ; toggle regrex at search (c-s)
 (global-set-key (kbd "s-z") 'undo-tree-undo) ; undo (cmd+z)
 (global-set-key (kbd "s-Z") 'undo-tree-redo) ; redo (cmd+shift+z)
 (global-set-key (kbd "s-+") 'text-scale-increase) ; resize increase (cmd++)
@@ -369,7 +359,7 @@
 (add-to-list 'default-frame-alist '(top . 0))
 (add-to-list 'default-frame-alist '(left . 15))
 (add-to-list 'default-frame-alist '(font . "ricty-16"))
-(add-to-list 'default-frame-alist '(background-color . "black"))
+(add-to-list 'default-frame-alist '(background-color . "#201f1f"))
 (add-to-list 'default-frame-alist '(foreground-color . "white"))
 (add-to-list 'default-frame-alist '(cursor-color . "gray"))
 
@@ -384,11 +374,14 @@
 
 ;;; 行番号を表示する
 ;; 表示切替はM-x wb-line-number-toggleと入力。
+;; 
 (defun show-line-number ()
 	"Show line number."
 	(interactive)
 	(require 'linum)
-	(global-linum-mode t)
+	(setq linum-delay t)
+	(defadvice linum-schedule (around my-linum-schedule () activate)
+  (run-with-idle-timer 0.2 nil #'linum-update-current))	(global-linum-mode t)
 	(setq linum-format "%5d: "))
 (show-line-number)
 
@@ -484,6 +477,23 @@
 ;;; ------------------------------------------------------------
 ;;; ほか諸設定
 
+;;; よくあるマイナーモードを非表示
+;; thx http://qiita.com/tadsan/items/8b5976682b955788c262
+(setq my/hidden-minor-modes
+      '(undo-tree-mode
+        eldoc-mode
+        auto-complete-mode
+        magit-auto-revert-mode
+				smart-tab-mode
+        flycheck-mode
+        abbrev-mode
+        helm-mode))
+
+(mapc (lambda (mode)
+          (setq minor-mode-alist
+                (cons (list mode "") (assq-delete-all mode minor-mode-alist))))
+        my/hidden-minor-modes)
+
 ;;; リージョンを上書きできるようにする
 (delete-selection-mode t)
 
@@ -561,30 +571,39 @@
 ;(setq indent-line-function 'indent-relative-maybe)
 
 ;;; 行カーソル
-(setq hl-line-face 'underline)
-(global-hl-line-mode)
-;; (require 'hl-line)
-;; (defface hlline-face
-;;   '((((class color)
-;;       (background dark))
-;;      (:background "dark slate gray"))
-;;     (((class color)
-;;       (background light))
-;;      (:background "#CC0066"))
-;;     (t
-;;      ()))
-;;   "*Face used by hl-line.")
-;; (setq hl-line-face 'hlline-face)
-;; (defun global-hl-line-timer-function ()
-;;   (global-hl-line-unhighlight-all)
-;;   (let ((global-hl-line-mode t))
-;;     (global-hl-line-highlight)))
-;; (setq global-hl-line-timer
-;;       (run-with-idle-timer 0.03 t 'global-hl-line-timer-function))
+;; thx http://rubikitch.com/tag/emacs-post-command-hook-timer/
+;; (setq hl-line-face 'underline)
+;; (global-hl-line-mode)
+;; 下線だと、日本語入力時の候補領域がわかりづらいのでやめる。
+(require 'hl-line)
+(defun global-hl-line-timer-function ()
+	"Line cursor."
+  (global-hl-line-unhighlight-all)
+  (let ((global-hl-line-mode t))
+		(set-face-attribute 'hl-line nil :foreground nil :background "#3e3e3e" :underline nil)
+    (global-hl-line-highlight)))
+(setq global-hl-line-timer
+      (run-with-idle-timer 0.03 t 'global-hl-line-timer-function))
 ;; (cancel-timer global-hl-line-timer)
 
 ;;; 釣り合いのとれる括弧のハイライト
-(show-paren-mode 1)
+(require 'mic-paren)
+(paren-activate)
+(setq paren-face '(underline paren-match-face))
+(setq paren-match-face '(underline paren-face))
+(setq paren-sexp-mode t)
+
+;;; 釣り合う行カッコが画面外だったらミニバッファに表示
+;; thx http://emacswiki.org/emacs/ShowParenMode
+(defadvice show-paren-function
+		(after show-matching-paren-offscreen activate)
+	"If the matching paren is offscreen, show the matching line in theecho area.  Has no effect if the character before point is not ofthe syntax class ')'."
+	(interactive)
+	(let* ((cb (char-before (point)))
+				 (matching-text (and cb
+														 (char-equal (char-syntax cb) ?\) )
+														 (blink-matching-open))))
+		(when matching-text (message matching-text))))
 
 ;;; wdired
 ;; diredでファイル編集
@@ -599,65 +618,6 @@
 ;; -------------------------------------------------
 ;; -------------------------------------------------
 ;; experiment area
-
-;; 検索置換用のマイナーモードを設定する
-;; (define-minor-mode editable-search-mode
-;; 	"provide editable search/replace environment"
-;; 	:init-value
-;; 	nil
-;; 	:lighter
-;; 	" Search"
-;; 	:keymap
-;; 	'((, (kbd "ESC") . (lambda ()
-;; 											 (interactive) (
-;; 																			(select-window (get-buffer-window "*search string*"))
-;; 																			(delete-window)
-;; 																			)))))
-
-;; 検索と置換用のバッファを用意する
-(defun split-window-for-search-and-replace ()
-	"Split window for search and replace."
-	(interactive)
-	(split-window-horizontally)
-	(select-window (next-window))
-	(switch-to-buffer "*search string*")
-	(split-window-vertically)
-	(select-window (next-window))
-	(switch-to-buffer "*replace string*")
-	(select-window (previous-window))
-	)
-(define-key global-map (kbd "s-f") 'split-window-for-search-and-replace)
-
-;; 検索用バッファの文字列で検索する
-(defun do-searsh-from-other-window-string (mode)
-	"Do search from other window string.  MODE [next|prev|rex-next|rex-prev|replace-next|replace-prev|re-replace-next|re-replace-prev]."
-	(interactive)
-	(with-selected-window (get-buffer-window "*search string*")
-		(setq search-strings (buffer-string)))
-	(setq len-search-string (length search-strings))
-	(cond
-	 ((string= mode "next")
-		(search-forward search-strings)
-		;; (goto-char (match-beginning 1))
-		;; (set-mark (point))
-		;; (goto-char (match-end 1)))
-		(goto-char (- (point) len-search-string))
-		(set-mark (point))
-		(goto-char (+ (point) len-search-string)))
-	 ((string= mode "prev")
-		(search-backward search-strings)
-		(goto-char (+ (point) len-search-string))
-		(set-mark (point))
-		(goto-char (- (point) len-search-string))))
-	
-	;; (deactivate-mark)
-	;; (setq end (point))
-	;; (set-marker (make-marker) (- (point) len-search-string))
-	;; (message "%s - %s" bgn end)
-	)
-
-
-(define-key global-map (kbd "s-g") (lambda () (interactive) (do-searsh-from-other-window-string "next")))
-(define-key global-map (kbd "s-G") (lambda () (interactive) (do-searsh-from-other-window-string "prev")))
+(load "editable-search")
 
 ;;; init.el ends here
