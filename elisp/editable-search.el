@@ -7,7 +7,6 @@
 ;; あたらしいウィンドウを開いて、そこで編集した文字列で検索や置換を行います。
 ;; 
 
-
 ;;; Code:
 
 ;;; defvar
@@ -37,7 +36,13 @@
 						(goto-char (region-end)))
 					 ((memq last-input-event '(left up))
 						(goto-char (region-beginning))))
-					(deactivate-mark))))))
+					(deactivate-mark)))
+			;; おまけ（1行目と最終行のカーソルの振る舞いをmac likeに）
+			(when (and (eq (line-number-at-pos) 1) (memq last-input-event '(up)))
+				(beginning-of-line))
+			(when (and (eq (line-number-at-pos) (count-lines 1 (point-max)))
+								 (memq last-input-event '(down)))
+				(end-of-line)))))
 
 ;;; key-binds
 (if es-is-use-super

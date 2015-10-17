@@ -57,8 +57,6 @@
 ;; M-x package-install RET smart-tab
 ;; M-x package-install RET multi-term RET
 ;; M-x package-install RET google-translate RET
-;; M-x package-install RET s RET
-;; M-x package-install RET f RET
 ;; M-x package-install RET web-mode RET
 ;; M-x package-install RET auto-async-byte-compile RET
 ;; M-x package-install RET point-undo RET
@@ -68,7 +66,6 @@
 ;; M-x package-install RET php-mode RET
 ;; M-x package-install RET mic-paren RET
 ;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
-;; http://www.ne.jp/asahi/alpha/kazu/php.html
 
 ;;; メモ
 ;; tempbuf（idle buffer）を自動的にkill-bufferしてくれるelispだけど、
@@ -130,20 +127,14 @@
 (require 'anything-config)
 (add-to-list 'anything-sources 'anything-c-source-emacs-commands)
 
-;;; s
-;; https://github.com/magnars/s.el
-;; 文字列処理の関数群
-(require 's)
-
-;;; f
-;; https://github.com/rejeep/f.el
-;; ファイル処理の関数群
-(require 'f)
-
 ;;; cursor-chg
 ;; カーソルの形状を変更
 (require 'cursor-chg)
+(change-cursor-mode 1)
 (toggle-cursor-type-when-idle 0)
+(setq curchg-default-cursor-color "White")
+;; 残念ながら日本語キーボードで「英数」「かな」キーを使っている限りは、これは効かない。
+(setq curchg-input-method-cursor-color "Orange")
 
 ;;; smart-tab
 ;; コンテキストに応じたtabキー。auto-completeと共存
@@ -188,9 +179,28 @@
 ;; オートコンプリート
 (load "init-auto-complete")
 
-;;; duplicate-region
+;;; duplicate-region-or-line
 ;; 行／選択範囲の複製 (cmd+d)
-(load "init-duplicate-region")
+(defun duplicate-region-or-line () 
+	(interactive) 
+	(let (selected
+				(is-line nil))
+		(if (not (region-active-p))
+				(progn
+					(setq is-line t)
+					(beginning-of-line)
+					(set-mark-command nil)
+					(end-of-line)
+					(setq deactivate-mark nil)))
+		(setq selected (buffer-substring-no-properties (region-beginning) (region-end)))
+		(if is-line (progn 
+									(insert "\n" selected)
+									(beginning-of-line))
+			(insert selected))))
+(define-key global-map (kbd "s-d") 'duplicate-region-or-line)
+
+;;; editable-search
+(load "editable-search")
 
 ;;; auto-async-byte-compile
 ;; .el自動コンパイルファイルを保存時に自動でバイトコンパイル。init.elを除く
@@ -218,6 +228,7 @@
 (global-set-key [s-kp-add] 'text-scale-increase) ; resize increase (cmd++)
 (global-set-key (kbd "s--") 'text-scale-decrease) ; resize decrease (cmd+-)
 (global-set-key [s-kp-subtract] 'text-scale-decrease) ; resize decrease (cmd+-)
+;; (global-set-key [s-kp-equal] (text-scale-mode 0))
 ;; (global-set-key [s-kp-equal] (text-scale-mode 0))
 ;; (global-set-key (kbd "s-=") (text-scale-mode 0))
 ;; (global-set-key [s-kp-0] (text-scale-mode 0))
@@ -253,7 +264,7 @@
     "*Shell Command Output*" "*Apropos*" "*Buffer List*" "*Messages*" "*anything*"))
 (defvar my-visible-blst nil)       ; 移動開始時の buffer list を保存
 (defvar my-bslen 15)               ; buffer list 中の buffer name の最大長
-(defvar my-blist-display-time 2)   ; buffer list の表示時間
+(defvar my-blist-display-time 4)   ; buffer list の表示時間
 (defface my-cbface                 ; buffer list 中で current buffer を示す face
   '((t (:foreground "wheat" :underline t))) nil)
 
@@ -268,7 +279,7 @@
         (cons (car blst) (my-visible-buffers (cdr blst)))))))
 
 (defun my-show-buffer-list (prompt spliter)
-	"My show buffer list.  PROMPT, SPLITER."
+	"My show buffer list. PROMPT, SPLITER."
 	(interactive)
   (let* ((len (string-width prompt))
          (str (mapconcat
@@ -362,6 +373,9 @@
 (add-to-list 'default-frame-alist '(background-color . "#201f1f"))
 (add-to-list 'default-frame-alist '(foreground-color . "white"))
 (add-to-list 'default-frame-alist '(cursor-color . "gray"))
+
+;; 行間隔を少し広げる
+(set-default 'line-spacing 3)
 
 ;;; 新規フレーム作成 (cmd+shift+n)
 (defun create-new-frame ()
@@ -523,7 +537,7 @@
 ;(add-hook 'after-init-hook 'mac-change-language-to-us)
 
 ;;; minibuffer 内は英数モードにする
-;(add-hook 'minibuffer-setup-hook 'mac-change-language-to-us)
+;; (mac-auto-ascii-mode t)
 
 ;;; [migemo]isearch のとき IME を英数モードにする
 ;(add-hook 'isearch-mode-hook 'mac-change-language-to-us)
@@ -613,11 +627,5 @@
 ;(require 'elscreen)
 ;(setq elscreen-prefix-key (kbd "C-z"))
 ;(elscreen-start)
-
-;; -------------------------------------------------
-;; -------------------------------------------------
-;; -------------------------------------------------
-;; experiment area
-(load "editable-search")
 
 ;;; init.el ends here
