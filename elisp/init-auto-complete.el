@@ -4,10 +4,10 @@
 ;; thx http://fukuyama.co/emacs-auto-complete
 
 ;;; Code:
-
 (require 'auto-complete)
 (require 'auto-complete-config)
 (global-auto-complete-mode t)
+(setq ac-dwim t)
 
 ;; ユーザ辞書ディレクトリ
 (defvar ac-user-dict-dir (expand-file-name "~/.emacs.d/ac-dict/"))

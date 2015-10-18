@@ -97,6 +97,9 @@
 (require 'php-mode)
 (require 'web-mode)
 
+;; (autoload 'js2-mode "js2" nil t)
+;; (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+
 ;;; undohist
 ;; ファイルを閉じてもundoの履歴を残す
 (require 'undohist)
@@ -200,7 +203,10 @@
 (define-key global-map (kbd "s-d") 'duplicate-region-or-line)
 
 ;;; editable-search
-(load "editable-search")
+(custom-set-variables
+ '(es-is-use-super t)
+ '(es-is-deactivate-region-by-cursor t))
+(require 'editable-search)
 
 ;;; auto-async-byte-compile
 ;; .el自動コンパイルファイルを保存時に自動でバイトコンパイル。init.elを除く
@@ -254,14 +260,17 @@
 (defun create-temporary-buffer ()
 	"Create temporal buffer."
   (interactive)
-  (switch-to-buffer (generate-new-buffer "new")))
+  (switch-to-buffer (generate-new-buffer "new"))
+	(global-auto-complete-mode t))
 (define-key global-map (kbd "s-t") 'create-temporary-buffer) ; (cmd+t)
 
 ;; 前後のバッファ
 ;; http://www.jaist.ac.jp/~n-yoshi/tips/elisp_tips.html#buffer
 (defvar my-ignore-blst             ; 移動の際に無視するバッファのリスト
   '("*Help*" "*Compile-Log*" "*Mew completions*" "*Completions*"
-    "*Shell Command Output*" "*Apropos*" "*Buffer List*" "*Messages*" "*anything*"))
+    "*Shell Command Output*" "*Apropos*" "*Buffer List*" "*Messages*"
+		"*anything*" "*search string*" "*replace string*" "*Backtrace*"
+		"*Flycheck error messages*"))
 (defvar my-visible-blst nil)       ; 移動開始時の buffer list を保存
 (defvar my-bslen 15)               ; buffer list 中の buffer name の最大長
 (defvar my-blist-display-time 4)   ; buffer list の表示時間
@@ -418,8 +427,8 @@
 ;;; ------------------------------------------------------------
 ;;; Emacs操作
 
-;;; C-jでs式を評価
-(global-set-key (kbd "C-j") 'eval-defun)
+;;; s+RETでeval-buffer
+(global-set-key [s-return] 'eval-buffer)
 
 ;;; C-aで、開始場所と先頭をトグル
 ;; thx http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
@@ -496,7 +505,7 @@
 (setq my/hidden-minor-modes
       '(undo-tree-mode
         eldoc-mode
-        auto-complete-mode
+        ;; auto-complete-mode
         magit-auto-revert-mode
 				smart-tab-mode
         flycheck-mode
@@ -627,5 +636,22 @@
 ;(require 'elscreen)
 ;(setq elscreen-prefix-key (kbd "C-z"))
 ;(elscreen-start)
+
+;;; ------------------------------------------------------------
+;;; ------------------------------------------------------------
+;;; experimental area
+;; (thing-at-point)
+
+;;; Todo:
+;; 正規表現のとき、検索置換ウィンドウの色を変える（難しい）
+;; 本体ウィンドウクローズ時に、検索置換もクローズ
+;; 検索時に出る（ことがある）エラーの調査
+;; 直観的に編集ウィンドウに戻るキーバインド
+;; マルチファイル検索置換
+;; fundamental-modeでのauto-complete調査（できればコメントアウト領域でも）
+;; js2-mode
+;; HTMLのflycheck
+;; doctypeを見てのbrやタグの挿入
+;; emacs likeなデフォルトのキーバインド
 
 ;;; init.el ends here
