@@ -648,10 +648,9 @@
 ;; 検索時に出る（ことがある）エラーの調査
 ;; 直観的に編集ウィンドウに戻るキーバインド
 ;; マルチファイル検索置換
-;; fundamental-modeでのauto-complete調査（できればコメントアウト領域でも）
 ;; js2-mode
 ;; HTMLのflycheck
 ;; doctypeを見てのbrやタグの挿入
-;; emacs likeなデフォルトのキーバインド
+;; editable-searchのemacs likeなデフォルトのキーバインド
 
 ;;; init.el ends here

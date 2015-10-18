@@ -8,6 +8,7 @@
 (require 'auto-complete-config)
 (global-auto-complete-mode t)
 (setq ac-dwim t)
+(setq ac-disable-faces nil)
 
 ;; ユーザ辞書ディレクトリ
 (defvar ac-user-dict-dir (expand-file-name "~/.emacs.d/ac-dict/"))
