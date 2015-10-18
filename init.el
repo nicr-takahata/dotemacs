@@ -288,7 +288,7 @@
         (cons (car blst) (my-visible-buffers (cdr blst)))))))
 
 (defun my-show-buffer-list (prompt spliter)
-	"My show buffer list. PROMPT, SPLITER."
+	"My show buffer list.  PROMPT, SPLITER."
 	(interactive)
   (let* ((len (string-width prompt))
          (str (mapconcat
@@ -333,22 +333,21 @@
 	(interactive)
 	(let ($save)
 		;; アスタリスクで始まるバッファは何も尋ねず閉じる
-		(if (string= "*" (substring (buffer-name) 0 1))
+		(if (or (string= "*" (substring (buffer-name) 0 1)) buffer-read-only)
 				(kill-buffer)
 			;; バッファがウインドウ分割をしている時は、単にdelete-windowする
 			(if (one-window-p)
 					;; バッファがウインドウ分割をしていない時には、変更の有無を確認
 					(if (buffer-modified-p)
 							;; 変更があるので振る舞いを尋ねる
-							(progn
-								(setq $save (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
-								(cond
-								 ((string-equal $save "1")
-									(save-buffer))
-								 ((string-equal $save "2")
-									(progn (call-interactively 'write-file)
-												 (save-buffer))))
-								(kill-buffer))
+							(setq $save (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
+						(cond
+						 ((string-equal $save "1")
+							(save-buffer))
+						 ((string-equal $save "2")
+							(progn (call-interactively 'write-file)
+										 (save-buffer))))
+						(kill-buffer)
 						;; 変更がないのでkill-buffer
 						(kill-buffer)))
 			;; ウィンドウ分割されていないので、delete-window
