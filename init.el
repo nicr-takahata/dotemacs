@@ -182,6 +182,7 @@
 (require 'web-mode)
 
 (require 'js2-mode)
+(add-hook 'js2-mode-hook '(flycheck-mode t))
 ;; (autoload 'js2-mode "js2" nil t)
 ;; (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 ;; (define-key js2-mode-map (kbd "M-up") 'previous-error))
@@ -211,7 +212,6 @@
 (setq my/hidden-minor-modes
 			'(undo-tree-mode
 				eldoc-mode
-				;; auto-complete-mode
 				magit-auto-revert-mode
 				smart-tab-mode
 				flycheck-mode
@@ -741,11 +741,13 @@
 ;;; ------------------------------------------------------------
 ;;; Todo:
 ;; 検索置換において、情報エリアを作って、ターゲットウィンドウと正規表現モードかどうかを表示する
+;; 検索置換において、選択範囲内を置換を実装
+;; マルチファイル検索置換
 ;; モードラインを表示しないウィンドウ
 ;; 検索時に出る（ことがある）エラーの調査
-;; マルチファイル検索置換
 ;; doctypeを見てのbrやタグの挿入
 ;; editable-searchのemacs likeなデフォルトのキーバインド
+;; よくあるマイナーモードを非表示が上手くいかない？
 
 ;;; ------------------------------------------------------------
 ;;; experimental area

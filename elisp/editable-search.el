@@ -106,6 +106,8 @@
 			(define-key global-map (kbd "s-r") (lambda () (interactive)
 																					 (es-search-replace "rep-here")))
 			;; local-map editable-search-mode-map
+			(define-key editable-search-mode-map (kbd "s-R") (lambda () (interactive)
+																												 (es-replace-all "")))
 			(define-key editable-search-mode-map [escape] 'keyboard-quit)
 			(define-key editable-search-mode-map (kbd "s-F") 'es-delete-windows)
 			(define-key editable-search-mode-map (kbd "C-s-f") 'es-toggle-search-mode)
@@ -113,6 +115,8 @@
 																												 (select-window es-target-window)))
 
 			;; local-map editable-re-search-mode-map
+			(define-key editable-re-search-mode-map (kbd "s-R") (lambda () (interactive)
+																														(es-replace-all "re")))
 			(define-key editable-re-search-mode-map (kbd "s-g") (lambda () (interactive)
 																														(es-search-replace "re-next")))
 			(define-key editable-re-search-mode-map (kbd "s-G") (lambda () (interactive)
@@ -181,6 +185,7 @@
 		(if (and is-search-window-exist is-replace-window-exist)
 				(progn
 					(setq es-target-window (selected-window)) ; 対象ウィンドウは毎度明示する
+					(editable-search-mode t)
 					(select-window (get-buffer-window es-search-str-window)))
 			(progn
 				;; どちらかだけ開いていたら、もう片方を閉じる
@@ -222,9 +227,48 @@
 							 (select-window es-target-window)))))
 
 ;;; ------------------------------------------------------------
+;;; 共通関数
+
+;; 選択範囲の置換用関数
+(defun es-replace-region (search-str replace-str is-re)
+	"(string)SEARCH-STR, (string)REPLACE-STR, (bool)IS-RE."
+	(when mark-active
+		(let ((beg (region-beginning))
+					(end (region-end)))
+			(progn
+				(when is-re
+					(setq replace-str (replace-regexp-in-string
+														 search-str
+														 replace-str
+														 (buffer-substring-no-properties beg end))))
+				(delete-region beg end)
+				(insert replace-str)))))
+
+;; 選択範囲の作成用関数
+;; 検索方向に応じて、キャレットの位置を適切にする
+(defun es-generate-region (direction len-search-string)
+	"(string)DIRECTION, (int)LEN-SEARCH-STRING."
+	(let
+			(beg
+			 end)
+		(progn
+		 (cond
+			((string= direction "next")
+			 (setq beg (- (point) len-search-string))
+			 (goto-char beg)
+			 (setq end (+ (point) len-search-string))
+			 (set-mark-command nil)
+			 (goto-char end))
+			((string= direction "prev")
+			 (setq end (+ (point) len-search-string))
+			 (goto-char end)
+			 (setq beg (- (point) len-search-string))
+			 (set-mark-command nil)
+			 (goto-char beg)))
+		 (setq deactivate-mark nil))))
+
+;;; ------------------------------------------------------------
 ;;; 検索用バッファの文字列で検索する
-(declare-function es-generate-region-for-hl "es-generate-region-for-hl" ())
-(declare-function es-replace-region "es-replace-region" ())
 (declare-function es-move-region "es-move-region" ())
 (defun es-search-replace (mode)
 	"Do search from other window string.  MODE [next|prev|re-next|re-prev|rep-here|rep-next|rep-prev|re-rep-next|re-rep-prev]."
@@ -269,37 +313,6 @@
 		;; 置換モードなのに置換文字列がなければ、エラーを返す
 		(if (and is-replace (not replace-str)) (error "Error: replace word is empty"))
 
-		;; 選択範囲の作成用関数
-		;; 検索方向に応じて、キャレットの位置を適切にする
-		(defun es-generate-region-for-hl ()
-			(cond
-			 (is-next
-				(setq beg (- (point) len-search-string))
-				(goto-char beg)
-				(setq end (+ (point) len-search-string))
-				(set-mark-command nil)
-				(goto-char end))
-			 (is-prev
-				(setq end (+ (point) len-search-string))
-				(goto-char end)
-				(setq beg (- (point) len-search-string))
-				(set-mark-command nil)
-				(goto-char beg)))
-			(setq deactivate-mark nil))
-
-		;; 選択範囲の置換用関数
-		(defun es-replace-region ()
-			(when mark-active
-				(progn
-					(setq beg (region-beginning))
-					(setq end (region-end))
-					(when is-re
-						(progn
-							(setq target-str (buffer-substring-no-properties beg end))
-							(setq replace-str (replace-regexp-in-string search-str replace-str target-str))))
-					(delete-region beg end)
-					(insert replace-str))))
-
 		;; 検索文字列にキャレットを移動しリージョンにする関数
 		(defun es-move-region ()
 			(cond
@@ -316,16 +329,16 @@
 					(setq len-search-string (length (match-string-no-properties 0)))
 				(setq len-search-string (length search-str)))
 			;; リージョン作成
-			(es-generate-region-for-hl))
+			(es-generate-region (if is-next "next" "prev") len-search-string))
 
 		;; 処理本体
 		(cond
 		 ;; rep-nextやrep-prevは、いまの選択範囲を置換してから次に行くようにする
 		 ((or (and is-replace is-next) (and is-replace is-prev))
-			(progn (when mark-active (es-replace-region))
+			(progn (when mark-active (es-replace-region search-str replace-str is-re))
 						 (es-move-region)))
 		 ;; その場を置換
-		 (is-replace-here (es-replace-region))
+		 (is-replace-here (es-replace-region search-str replace-str is-re))
 		 ;; 通常はただのキャレット移動
 		 (t (es-move-region)))
 
@@ -333,8 +346,82 @@
 		(setq es-previous-searced-str search-str)
 		(setq es-previous-replaced-str replace-str)))
 
-;; (makunbound 'es-previous-searced-str)
-;; (makunbound 'es-previous-replaced-str)
+;;; ------------------------------------------------------------
+;;; すべて置換
+(defun es-replace-all (mode)
+	"Replace All.  MODE [re]."
+	(let
+			((search-str "")
+			 (replace-str "")
+			 (beg 1)
+			 (end 0)
+			 (cnt 0)
+			 beg-each
+			 end-each
+			 (len-search-string 0)
+			 (is-re (if (string= mode "re") t nil))
+			 target-str
+			 type)
+
+		;; 現在のウィンドウが検索・置換編集用ウィンドウだったら、主たるウィンドウに移動する
+		(if (eq (selected-window) es-target-window) ()
+			(select-window es-target-window))
+
+		;; 検索用文字列の取得
+		(if (windowp (get-buffer-window es-search-str-window))
+				(with-selected-window (get-buffer-window es-search-str-window)
+					(setq search-str (buffer-string)))
+			(setq search-str (if (boundp 'es-previous-searced-str) es-previous-searced-str nil)))
+		(if (not search-str) (error "Error: search word is empty"))
+
+		;; 置換用文字列の取得
+		(if (windowp (get-buffer-window es-replace-str-window))
+				(with-selected-window (get-buffer-window es-replace-str-window)
+					(setq replace-str (buffer-string)))
+			(setq replace-str (if (boundp 'es-previous-replaced-str) es-previous-replaced-str nil)))
+		(if (not replace-str) (error "Error: replace word is empty"))
+
+		;; 選択範囲があればそこを対象とする、なければ、すべてを対象にして良いか尋ねる
+		(if (region-active-p)
+				(progn
+					(setq beg (region-beginning))
+					(setq end (region-end)))
+			(progn
+				(setq type (read-string "replace whole buffer?(y, n): " nil))
+				(if (string= type "y")
+						(progn
+							(setq beg (point-min))
+							(setq end (point-max)))
+					(error "Error: no target region"))))
+
+		;; 選択範囲内を置換する
+		(save-excursion
+			(save-restriction
+				(narrow-to-region beg end)
+				(goto-char (point-min))
+				(while (<= (point) (point-max))
+					(progn
+						;; 文字列を走査
+						(if is-re
+								(re-search-forward search-str)
+							(search-forward search-str))
+						(progn
+							;; ヒットした文字長の取得
+							(if is-re
+									(setq len-search-string (length (match-string-no-properties 0)))
+								(setq len-search-string (length search-str)))
+							;; 選択範囲の設定と置換
+							(es-generate-region "next" len-search-string)
+							(es-replace-region search-str replace-str is-re))))
+				(setq cnt (1+ cnt))))
+		(message "%s replaced." cnt)
+
+		;; 今回検索・置換した文字を次回用に保存
+		(setq es-previous-searced-str search-str)
+		(setq es-previous-replaced-str replace-str)))
+
+;;; ------------------------------------------------------------
+;;; Provide
 
 (provide 'editable-search)
 
