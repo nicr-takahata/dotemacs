@@ -67,6 +67,10 @@
 ;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
 
 ;;; メモ
+
+;; js2-modeは、M-x install-package RET js2-modeで入りそうなものだったが、なぜか
+;; not foundになった。M-x list-packagesで、C-s js2-mode RET Installでだったら入った。
+
 ;; tempbuf（idle buffer）を自動的にkill-bufferしてくれるelispだけど、
 ;; 結構不意に必要なbufferをkillしていることがあるので、使わない方向で。
 ;; M-x install-elisp-from-emacswiki RET tempbuf.el RET
@@ -176,8 +180,12 @@
 ;;; mode
 (require 'php-mode)
 (require 'web-mode)
+
+(require 'js2-mode)
 ;; (autoload 'js2-mode "js2" nil t)
 ;; (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+;; (define-key js2-mode-map (kbd "M-up") 'previous-error))
+;; (define-key js2-mode-map (kbd "M-down") 'next-error)
 
 ;;; flycheck
 (load "flycheck")
@@ -345,27 +353,29 @@
 (defun contexual-close-window ()
 	"Mac like close window (cmd+w)."
 	(interactive)
-	(let ($save)
-		;; アスタリスクで始まるバッファは何も尋ねず閉じる
-		(if (or (string= "*" (substring (buffer-name) 0 1)) buffer-read-only)
-				(kill-buffer)
-			;; バッファがウインドウ分割をしている時は、単にdelete-windowする
-			(if (one-window-p)
-					;; バッファがウインドウ分割をしていない時には、変更の有無を確認
-					(if (buffer-modified-p)
-							;; 変更があるので振る舞いを尋ねる
-							(progn
-								(setq $save (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
-								(cond
-								 ((string-equal $save "1")
-									(save-buffer))
-								 ((string-equal $save "2")
-									(progn (call-interactively 'write-file)
-												 (save-buffer))))
-								(kill-buffer))
-						;; 変更がないのでkill-buffer
-						(kill-buffer)))
-			;; ウィンドウ分割されていないので、delete-window
+	(let
+			(save-type)
+		;; フレームがウインドウ分割をしていない時には、変更の有無を確認
+		(if (one-window-p)
+				;; 変更があるので振る舞いを尋ねる
+				(if (buffer-modified-p)
+						(progn
+							;; アスタリスクで始まるバッファは何も尋ねず閉じる
+							(if (or (string= "*" (substring (buffer-name) 0 1)) buffer-read-only)
+									(kill-buffer)
+								;; 振る舞いを確認する必要があるウィンドウなので、確認する
+								(progn
+									(setq save-type (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
+									(cond
+									 ((string-equal save-type "1")
+										(save-buffer))
+									 ((string-equal save-type "2")
+										(progn (call-interactively 'write-file)(save-buffer)))
+									 (t
+										(kill-buffer-and-window))))))
+					;; 変更がないのでkill-buffer-and-window
+					(kill-buffer-and-window))
+			;; フレームがウィンドウ分割をしているので、delete-windowする
 			(delete-window))))
 (global-set-key (kbd "s-w") 'contexual-close-window)
 
@@ -567,6 +577,15 @@
 ;; diredでファイル編集
 (define-key dired-mode-map "r" 'wdired-change-to-wdired-mode)
 
+;;; diredでタブを開きすぎないようにする
+;; http://nishikawasasaki.hatenablog.com/entry/20120222/1329932699
+;; dired-find-alternate-file の有効化
+(put 'dired-find-alternate-file 'disabled nil)
+;; RET 標準の dired-find-file では dired バッファが複数作られるので
+;; dired-find-alternate-file を代わりに使う
+(define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file)
+(define-key dired-mode-map (kbd "a") 'dired-find-file)
+
 ;;; ------------------------------------------------------------
 ;;; whitespace関連設定
 
@@ -723,13 +742,8 @@
 ;;; Todo:
 ;; 検索置換において、情報エリアを作って、ターゲットウィンドウと正規表現モードかどうかを表示する
 ;; モードラインを表示しないウィンドウ
-;; 正規表現のとき、検索置換ウィンドウの色を変える（難しい）
-;; 本体ウィンドウクローズ時に、検索置換もクローズ
 ;; 検索時に出る（ことがある）エラーの調査
-;; 直観的に編集ウィンドウに戻るキーバインド
 ;; マルチファイル検索置換
-;; js2-mode
-;; HTMLのflycheck
 ;; doctypeを見てのbrやタグの挿入
 ;; editable-searchのemacs likeなデフォルトのキーバインド
 
