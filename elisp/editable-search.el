@@ -36,7 +36,6 @@
 (defvar es-previous-replaced-str)
 (defvar editable-search-mode-map (make-keymap))
 (defvar editable-re-search-mode-map (make-keymap))
-(defvar es-is-initialize-windows nil)
 
 ;;; ------------------------------------------------------------
 ;;; hook
@@ -62,27 +61,30 @@
 								 (memq last-input-event '(down)))
 				(end-of-line)))))
 
-;;; ウィンドウ構成が変更されるとき検索置換窓を閉じる
-;; (add-hook 'window-configuration-change-hook 'es-window-hook-fn)
-;; (defun es-window-hook-fn ()
-;; 	"About search mode windows."
-;; 	(let
-;; 			((search-windowp (windowp (get-buffer-window es-search-str-window)))
-;; 			 (replace-windowp (windowp (get-buffer-window es-replace-str-window))))
-;; 		(message "%s - %s - %s" es-is-initialize-windows search-windowp replace-windowp)
-;; 		(when (not es-is-initialize-windows)
-;; 			(progn
-;; 				(setq es-is-initialize-windows nil)
-;; 				(when search-windowp
-;; 					(progn
-;; 						(when (eq (seleted-window) (get-buffer-window es-search-str-window))
-;; 								(select-window (next-window)))
-;; 						(delete-window (get-buffer-window es-search-str-window))))
-;; 				(when replace-windowp
-;; 					(progn
-;; 						(when (eq (seleted-window) (get-buffer-window es-replace-str-window))
-;; 								(select-window (next-window)))
-;; 						(delete-window (get-buffer-window es-replace-str-window))))))))
+;;; 削除によってウィンドウ構成を変えようとしたら検索置換窓を閉じる
+(add-hook 'post-command-hook 'es-delete-window-fn)
+(defun es-delete-window-fn ()
+			 "About search mode windows."
+			 (let
+					 ((search-windowp (windowp (get-buffer-window es-search-str-window)))
+						(replace-windowp (windowp (get-buffer-window es-replace-str-window))))
+				 ;; (message "this-command:%s" this-command)
+				 (when (memq this-command '(delete-window
+																		kill-buffer-and-window
+																		delete-other-windows
+																		contexual-close-window
+																		mouse-delete-window
+																		mouse-delete-other-windows))
+					 (progn
+						 (message "close search windows.")
+						 (when search-windowp
+							 (progn
+								 (select-window (get-buffer-window es-search-str-window))
+								 (kill-buffer-and-window)))
+						 (when replace-windowp
+							 (progn
+								 (select-window (get-buffer-window es-replace-str-window))
+								 (kill-buffer-and-window)))))))
 
 ;;; ------------------------------------------------------------
 ;;; key-binds
@@ -107,6 +109,8 @@
 			(define-key editable-search-mode-map [escape] 'keyboard-quit)
 			(define-key editable-search-mode-map (kbd "s-F") 'es-delete-windows)
 			(define-key editable-search-mode-map (kbd "C-s-f") 'es-toggle-search-mode)
+			(define-key editable-search-mode-map (kbd "s-h") (lambda () (interactive)
+																												 (select-window es-target-window)))
 
 			;; local-map editable-re-search-mode-map
 			(define-key editable-re-search-mode-map (kbd "s-g") (lambda () (interactive)
@@ -173,8 +177,6 @@
 				 (beg (if mark-active (region-beginning)))
 				 (end (if mark-active (region-end)))
 				 (word (if mark-active (buffer-substring-no-properties beg end) "")))
-		;; ウィンドウ構成変更hookの影響を回避
-		(setq es-is-initialize-windows t)
 		;; 検索窓、置換窓がすでに開いている場合は、キャレットを移動
 		(if (and is-search-window-exist is-replace-window-exist)
 				(progn
@@ -217,9 +219,7 @@
 							 (goto-char (point-max))
 							 (delete-region (point-min) (point-max))
 							 (insert word)
-							 (select-window es-target-window)))
-		;; ウィンドウ構成変更hookの復活
-		(setq es-is-initialize-windows nil)))
+							 (select-window es-target-window)))))
 
 ;;; ------------------------------------------------------------
 ;;; 検索用バッファの文字列で検索する
