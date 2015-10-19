@@ -354,14 +354,15 @@
 					;; バッファがウインドウ分割をしていない時には、変更の有無を確認
 					(if (buffer-modified-p)
 							;; 変更があるので振る舞いを尋ねる
-							(setq $save (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
-						(cond
-						 ((string-equal $save "1")
-							(save-buffer))
-						 ((string-equal $save "2")
-							(progn (call-interactively 'write-file)
-										 (save-buffer))))
-						(kill-buffer)
+							(progn
+								(setq $save (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
+								(cond
+								 ((string-equal $save "1")
+									(save-buffer))
+								 ((string-equal $save "2")
+									(progn (call-interactively 'write-file)
+												 (save-buffer))))
+								(kill-buffer))
 						;; 変更がないのでkill-buffer
 						(kill-buffer)))
 			;; ウィンドウ分割されていないので、delete-window
@@ -421,6 +422,9 @@
 
 ;;; グループを使わない
 (setq tabbar-buffer-groups-function nil)
+
+;; 画像を使わないことで軽量化する
+(setq tabbar-use-images nil)
 
 ;;; 左側のボタンを消す
 (dolist (btn '(tabbar-buffer-home-button
