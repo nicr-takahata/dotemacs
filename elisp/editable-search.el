@@ -146,11 +146,11 @@
 	;; es-toggle-search-modeは、local-mapなので、editable-search-modeからしか呼ばれないはず。
 	;; ゆえに、es-target-windowはたぶん存在する。
 	(when (windowp es-target-window)
-			(progn
-				(with-selected-window es-target-window
-					(if (eq editable-re-search-mode nil)
-							(editable-re-search-mode t)
-						(editable-re-search-mode -1))))))
+		(progn
+			(with-selected-window es-target-window
+				(if (eq editable-re-search-mode nil)
+						(editable-re-search-mode t)
+					(editable-re-search-mode -1))))))
 
 ;;; ------------------------------------------------------------
 ;;; 検索と置換用のウィンドウをdeleteする
@@ -241,9 +241,9 @@
 				 (is-next (if (string= direction-flag-str "next") t nil))
 				 (is-prev (if (string= direction-flag-str "prev") t nil))
 				 (is-replace (if (or (string= replace-flag-str "rep-ne")
-				 										 (string= replace-flag-str "rep-pr")
-				 										 (string= replace-flag-str "rep-he")
-				 										 (string= replace-flag-str "re-rep")) t nil))
+														 (string= replace-flag-str "rep-pr")
+														 (string= replace-flag-str "rep-he")
+														 (string= replace-flag-str "re-rep")) t nil))
 				 (is-replace-here (if (string= mode "rep-here") t nil))
 				 target-str)
 
@@ -335,12 +335,6 @@
 
 ;; (makunbound 'es-previous-searced-str)
 ;; (makunbound 'es-previous-replaced-str)
-
-;; aaaaaaa
-;; bb
-;; cc
-;; aa
-;; aa
 
 (provide 'editable-search)
 

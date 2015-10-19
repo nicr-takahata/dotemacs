@@ -48,17 +48,17 @@
 ;;; 選択範囲内の文字列置換
 ;; thx http://qiita.com/ShingoFukuyama/items/62269c4904ca085f9149
 (defun replace-strings-in-region-by-list (list)
-  "Replace strings in a region according to LIST."
-  (if mark-active
-      (let* ((beg (region-beginning))
-             (end (region-end))
+	"Replace strings in a region according to LIST."
+	(if mark-active
+			(let* ((beg (region-beginning))
+						 (end (region-end))
 						 (word (buffer-substring-no-properties beg end)))
-        (mapc (lambda (r)
+				(mapc (lambda (r)
 								(setq word (replace-regexp-in-string (car r) (cdr r) word)))
-              list)
+							list)
 				(delete-region beg end)
-        (insert word))
-    (error "Need to make region")))
+				(insert word))
+		(error "Need to make region")))
 
 ;;; ------------------------------------------------------------
 ;;; dump-values
@@ -66,7 +66,7 @@
 (declare-function find "find" (arg1 arg2 arg3 arg4))
 (defun dump-values (type ip)
 	"Insert html intaractive.  TYPE is language.  IP is Global ip."
-  (interactive)
+	(interactive)
 	(let* ((beg (region-beginning))
 				 (end (region-end))
 				 (word (buffer-substring-no-properties beg end))
@@ -101,9 +101,9 @@
 	"Put php opner and closer.  choose TYPE."
 	(interactive "nType 1:<?php ?>, 2:<?php(RET)?>, 3:?><?php:")
 	(let* ((beg (if mark-active (region-beginning) (point)))
-				(end (if mark-active (region-end) (point)))
-				(word (if mark-active (buffer-substring-no-properties beg end) ""))
-				(ret))
+				 (end (if mark-active (region-end) (point)))
+				 (word (if mark-active (buffer-substring-no-properties beg end) ""))
+				 (ret))
 		(cond
 		 ((eq type 2)
 			(setq ret (concat "<?php\n" word "\n?>")))
@@ -124,7 +124,7 @@
 (declare-function convert-to-td "convert-to-td" (arg))
 (defun any-html-tag (tag)
 	"Insert html intaractive.  TAG."
-  (interactive "sTag (default \"div\"): ")
+	(interactive "sTag (default \"div\"): ")
 	(let* ((beg (when (region-active-p) (region-beginning)))
 				 (end (when (region-active-p) (region-end)))
 				 (word (if (region-active-p) (buffer-substring-no-properties beg end) ""))
@@ -370,40 +370,40 @@
 ;;; remove-html-tags
 (defun remove-html-tags (tag)
 	"Remove html tags.  TAG is given interactivelly."
-  (interactive "sTag (1:all, 2:famous block, 3:form not text, 4:img not text, 5:ruby, tag:specify tag): ")
+	(interactive "sTag (1:all, 2:famous block, 3:form not text, 4:img not text, 5:ruby, tag:specify tag): ")
 	(cond
 	 ;; all
 	 ((string-equal tag "1") (progn
-															(replace-strings-in-region-by-list
-															 '(("<.+?>" . "")))
-															(message "remove all tags")))
+														 (replace-strings-in-region-by-list
+															'(("<.+?>" . "")))
+														 (message "remove all tags")))
 	 ;; famous block tags
 	 ((string-equal tag "2") (progn
-															(replace-strings-in-region-by-list
-															 '(("</*p.*?>\\|</*h[1-6].*?>\\|</*ul.*?>\\|</*ol.*?>\\|</*li.*?>\\|</*pre.*?>\\|</*dl.*?>\\|</*dt.*?>\\|</*dd.*?>\\|</*div.*?>\\|</*center.*?>\\|</*blockquote.*?>\\|</*address.*?>\\|</*table.*?>\\|</*tr.*?>\\|</*td.*?>\\|</*th.*?>\\|</*thead.*?>\\|</*section.*?>\\|</*header.*?>\\|</*footer.*?>\\|</*article.*?>" . "")))
-															(message "remove famous block tags")))
+														 (replace-strings-in-region-by-list
+															'(("</*p.*?>\\|</*h[1-6].*?>\\|</*ul.*?>\\|</*ol.*?>\\|</*li.*?>\\|</*pre.*?>\\|</*dl.*?>\\|</*dt.*?>\\|</*dd.*?>\\|</*div.*?>\\|</*center.*?>\\|</*blockquote.*?>\\|</*address.*?>\\|</*table.*?>\\|</*tr.*?>\\|</*td.*?>\\|</*th.*?>\\|</*thead.*?>\\|</*section.*?>\\|</*header.*?>\\|</*footer.*?>\\|</*article.*?>" . "")))
+														 (message "remove famous block tags")))
 	 ;; form elements tag except for text
 	 ((string-equal tag "3") (progn
-															(replace-strings-in-region-by-list
-															 '(("<label.*?>\\(.+?\\)</label>" . "\\1")))
-															(replace-strings-in-region-by-list
-															 '(("<option.*?>\\(.+?\\)</option>" . "\\1")))
-															(replace-strings-in-region-by-list
-															 '(("<input.*?value=\"\\(.+?\\)\".*?>" . "\\1")))
-															(replace-strings-in-region-by-list
-															 '(("<textarea.*?>\\(.+?\\)</textarea>" . "\\1")))
-															(message "remove form elements tag except for text")))
+														 (replace-strings-in-region-by-list
+															'(("<label.*?>\\(.+?\\)</label>" . "\\1")))
+														 (replace-strings-in-region-by-list
+															'(("<option.*?>\\(.+?\\)</option>" . "\\1")))
+														 (replace-strings-in-region-by-list
+															'(("<input.*?value=\"\\(.+?\\)\".*?>" . "\\1")))
+														 (replace-strings-in-region-by-list
+															'(("<textarea.*?>\\(.+?\\)</textarea>" . "\\1")))
+														 (message "remove form elements tag except for text")))
 	 ;; img tag except for alt
 	 ((string-equal tag "4") (progn
-															(replace-strings-in-region-by-list
-															 '(("<img.*?alt=\"\\(.+?\\)\".*?>" . "\\1")))
-															(message "remove form elements tag except for text")))
+														 (replace-strings-in-region-by-list
+															'(("<img.*?alt=\"\\(.+?\\)\".*?>" . "\\1")))
+														 (message "remove form elements tag except for text")))
 	 ;; ruby tag and ruby text
 	 ;; "<ruby>(?:<rb>)*(.*?)(?:</rb>)*(?:<rp>.*?</rp>)*<rt>.+?</rt>(?:<rp>.*?</rp>)*</ruby>"
 	 ((string-equal tag "5") (progn
-															(replace-strings-in-region-by-list
-															 '(("<ruby>\\(.+?\\)<rt>.+?<rt></ruby>" . "\\1")))
-															(message "remove ruby tag and ruby text")))
+														 (replace-strings-in-region-by-list
+															'(("<ruby>\\(.+?\\)<rt>.+?<rt></ruby>" . "\\1")))
+														 (message "remove ruby tag and ruby text")))
 	 ;; specify tag
 	 (t (progn
 				;; (replace-strings-in-region-by-list
@@ -420,28 +420,28 @@
 ;;; ------------------------------------------------------------
 ;;; 全角数字を半角数字に
 (defun convert-to-single-byte-number ()
-  "Convert multi-byte numbers in region into single-byte number."
-  (interactive)
-  (replace-strings-in-region-by-list
-   '(("１" . "1")
-     ("２" . "2")
-     ("３" . "3")
-     ("４" . "4")
-     ("５" . "5")
-     ("６" . "6")
-     ("７" . "7")
-     ("８" . "8")
-     ("９" . "9")
-     ("０" . "0"))))
+	"Convert multi-byte numbers in region into single-byte number."
+	(interactive)
+	(replace-strings-in-region-by-list
+	 '(("１" . "1")
+		 ("２" . "2")
+		 ("３" . "3")
+		 ("４" . "4")
+		 ("５" . "5")
+		 ("６" . "6")
+		 ("７" . "7")
+		 ("８" . "8")
+		 ("９" . "9")
+		 ("０" . "0"))))
 (global-set-key (kbd "s-u") 'convert-to-single-byte-number)
 
 ;;; ------------------------------------------------------------
 ;;; 選択範囲を1行にする
 (defun join-multi-lines-to-one ()
 	"Join multi lines."
-  (interactive)
-  (replace-strings-in-region-by-list
-   '(("\\(\n\\s-*\\)+" . ""))))
+	(interactive)
+	(replace-strings-in-region-by-list
+	 '(("\\(\n\\s-*\\)+" . ""))))
 (global-set-key [s-kp-divide] 'join-multi-lines-to-one) ; cmd+/
 (global-set-key (kbd "s-/") 'join-multi-lines-to-one) ; cmd+/
 
@@ -453,12 +453,12 @@
 ;;; HTML:タグとタグの間、またはタグ内を一気に選択
 (defun region-angle-brackets ()
 	"Select region angle brackets."
-  (interactive)
-  (let (pt)
-    (skip-chars-backward "^<>")
-    (setq pt (point))
-    (skip-chars-forward "^<>")
-    (set-mark pt)))
+	(interactive)
+	(let (pt)
+		(skip-chars-backward "^<>")
+		(setq pt (point))
+		(skip-chars-forward "^<>")
+		(set-mark pt)))
 (global-set-key (kbd "s-A") 'region-angle-brackets) ; cmd+shift+a
 
 ;;; ------------------------------------------------------------
@@ -473,8 +473,8 @@
 ;;現在バッファのファイルのフルパスを取得
 (defun get-current-path ()
 	"Get current file path."
-  (interactive)
-  (insert (or (buffer-file-name) (expand-file-name default-directory))))
+	(interactive)
+	(insert (or (buffer-file-name) (expand-file-name default-directory))))
 (global-set-key (kbd "M-s-k") 'get-current-path)
 
 ;;; jidaikobo-web-authoring-set.el ends here
