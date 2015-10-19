@@ -207,22 +207,6 @@
 (require 'phpdoc)
 (add-hook 'php-mode-hook (lambda () (eldoc-mode t)))
 
-;;; よくあるマイナーモードを非表示
-;; thx http://qiita.com/tadsan/items/8b5976682b955788c262
-(setq my/hidden-minor-modes
-			'(undo-tree-mode
-				eldoc-mode
-				magit-auto-revert-mode
-				smart-tab-mode
-				flycheck-mode
-				abbrev-mode
-				helm-mode))
-
-(mapc (lambda (mode)
-				(setq minor-mode-alist
-							(cons (list mode "") (assq-delete-all mode minor-mode-alist))))
-			my/hidden-minor-modes)
-
 ;;; ------------------------------------------------------------
 ;;; undo関連
 
@@ -739,15 +723,31 @@
 (load "jidaikobo-web-authoring-set")
 
 ;;; ------------------------------------------------------------
+;;; よくあるマイナーモードを非表示
+;; thx http://qiita.com/tadsan/items/8b5976682b955788c262
+;; これは一通り処理が終わった後呼ぶ必要がある。
+(setq my/hidden-minor-modes
+			'(undo-tree-mode
+				eldoc-mode
+				magit-auto-revert-mode
+				smart-tab-mode
+				flycheck-mode
+				abbrev-mode
+				helm-mode))
+
+(mapc (lambda (mode)
+				(setq minor-mode-alist
+							(cons (list mode "") (assq-delete-all mode minor-mode-alist))))
+			my/hidden-minor-modes)
+
+;;; ------------------------------------------------------------
 ;;; Todo:
 ;; 検索置換において、情報エリアを作って、ターゲットウィンドウと正規表現モードかどうかを表示する
-;; 検索置換において、選択範囲内を置換を実装
 ;; マルチファイル検索置換
 ;; モードラインを表示しないウィンドウ
 ;; 検索時に出る（ことがある）エラーの調査
 ;; doctypeを見てのbrやタグの挿入
 ;; editable-searchのemacs likeなデフォルトのキーバインド
-;; よくあるマイナーモードを非表示が上手くいかない？
 
 ;;; ------------------------------------------------------------
 ;;; experimental area
