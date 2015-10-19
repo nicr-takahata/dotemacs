@@ -65,6 +65,7 @@
 ;; M-x package-install RET flycheck RET
 ;; M-x package-install RET php-mode RET
 ;; M-x package-install RET mic-paren RET
+;; M-x package-install RET tabbar RET
 ;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
 
 ;;; メモ
@@ -264,64 +265,51 @@
 	(global-auto-complete-mode t))
 (define-key global-map (kbd "s-t") 'create-temporary-buffer) ; (cmd+t)
 
-;; 前後のバッファ
-;; http://www.jaist.ac.jp/~n-yoshi/tips/elisp_tips.html#buffer
-(defvar my-ignore-blst             ; 移動の際に無視するバッファのリスト
-  '("*Help*" "*Compile-Log*" "*Mew completions*" "*Completions*"
-    "*Shell Command Output*" "*Apropos*" "*Buffer List*" "*Messages*"
-		"*anything*" "*search string*" "*replace string*" "*Backtrace*"
-		"*Flycheck error messages*"))
-(defvar my-visible-blst nil)       ; 移動開始時の buffer list を保存
-(defvar my-bslen 15)               ; buffer list 中の buffer name の最大長
-(defvar my-blist-display-time 4)   ; buffer list の表示時間
-(defface my-cbface                 ; buffer list 中で current buffer を示す face
-  '((t (:foreground "wheat" :underline t))) nil)
+;; タブバー
+(require 'tabbar)
+(tabbar-mode)
 
-(defun my-visible-buffers (blst)
-	"My visible buffers.  BLST."
-	(interactive)
-  (if (eq blst nil) '()
-    (let ((bufn (buffer-name (car blst))))
-      (if (or (= (aref bufn 0) ? ) (member bufn my-ignore-blst))
-          ;; ミニバッファと無視するバッファには移動しない
-          (my-visible-buffers (cdr blst))
-        (cons (car blst) (my-visible-buffers (cdr blst)))))))
+;; タブ上でマウスホイールを使わない
+(tabbar-mwheel-mode nil)
 
-(defun my-show-buffer-list (prompt spliter)
-	"My show buffer list.  PROMPT, SPLITER."
-	(interactive)
-  (let* ((len (string-width prompt))
-         (str (mapconcat
-               (lambda (buf)
-                 (let ((bs (copy-sequence (buffer-name buf))))
-                   (when (> (string-width bs) my-bslen) ;; 切り詰め 
-                     (setq bs (concat (substring bs 0 (- my-bslen 2)) "..")))
-                   (setq len (+ len (string-width (concat bs spliter))))
-                   (when (eq buf (current-buffer)) ;; 現在のバッファは強調表示
-                     (put-text-property 0 (length bs) 'face 'my-cbface bs))
-                   (cond ((>= len (frame-width)) ;; frame 幅で適宜改行
-                          (setq len (+ (string-width (concat prompt bs spliter))))
-                          (concat "\n" (make-string (string-width prompt) ? ) bs))
-                         (t bs))))
-               my-visible-blst spliter)))
-    (let (message-log-max)
-      (message "%s" (concat prompt str))
-      (when (sit-for my-blist-display-time) (message nil)))))
+;; グループを使わない
+(setq tabbar-buffer-groups-function nil)
 
-(defun my-operate-buffer (pos)
-	(interactive)
-  (unless (window-minibuffer-p (selected-window));; ミニバッファ以外で
-    (unless (eq last-command 'my-operate-buffer)
-      ;; 直前にバッファを切り替えてなければバッファリストを更新
-      (setq my-visible-blst (my-visible-buffers (buffer-list))))
-    (let* ((blst (if pos my-visible-blst (reverse my-visible-blst))))
-      (switch-to-buffer (or (cadr (memq (current-buffer) blst)) (car blst))))
-    (my-show-buffer-list (if pos "[-->] " "[<--] ") (if pos " > "  " < " )))
-(setq this-command 'my-operate-buffer))
+;; 左側のボタンを消す
+(dolist (btn '(tabbar-buffer-home-button
+               tabbar-scroll-left-button
+               tabbar-scroll-right-button))
+  (set btn (cons (cons " " nil)
+                 (cons " " nil))))
 
-;; opt+cdm+[left|right]（ブラウザと同じ）で、バッファ移動
-(global-set-key [M-s-left] (lambda () (interactive) (my-operate-buffer nil)))
-(global-set-key [M-s-right] (lambda () (interactive) (my-operate-buffer t)))
+;; 除外するタブ
+;; http://dev.ariel-networks.com/wp/documents/aritcles/emacs/part11
+(defun my-tabbar-buffer-list ()
+	(remove-if
+	 (lambda (buffer)
+		 (find (aref (buffer-name buffer) 0) " *"))
+	 (buffer-list)))
+(setq tabbar-buffer-list-function 'my-tabbar-buffer-list)
+
+;; 色設定
+(set-face-attribute ; バー自体の色
+  'tabbar-default nil
+   :background "Gray"
+   :height 1.0)
+(set-face-attribute ; アクティブなタブ
+  'tabbar-selected nil
+   :background "black"
+   :foreground "white"
+   :weight 'bold
+   :box nil)
+(set-face-attribute ; 非アクティブなタブ
+  'tabbar-unselected nil
+   :background "Gray"
+   :foreground "black"
+   :box nil)
+
+(global-set-key [M-s-right] 'tabbar-forward)
+(global-set-key [M-s-left] 'tabbar-backward)
 
 ;;; ------------------------------------------------------------
 ;;; フレーム設定ウィンドウ操作
@@ -631,17 +619,13 @@
 ;; diredでファイル編集
 (define-key dired-mode-map "r" 'wdired-change-to-wdired-mode)
 
-;;; elscreen
-;(require 'elscreen)
-;(setq elscreen-prefix-key (kbd "C-z"))
-;(elscreen-start)
-
 ;;; ------------------------------------------------------------
 ;;; ------------------------------------------------------------
 ;;; experimental area
 ;; (thing-at-point)
 
 ;;; Todo:
+;; 検索置換において、情報エリアを作って、ターゲットウィンドウと正規表現モードかどうかを表示する
 ;; 正規表現のとき、検索置換ウィンドウの色を変える（難しい）
 ;; 本体ウィンドウクローズ時に、検索置換もクローズ
 ;; 検索時に出る（ことがある）エラーの調査
