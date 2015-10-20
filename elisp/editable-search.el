@@ -25,8 +25,8 @@
 	:type 'boolean)
 
 ;;; defvar
-(defvar es-rearch-window-foreground-color "White" "*Default 'Black'.")
-(defvar es-re-rearch-window-foreground-color "White" "*Default 'Black'.")
+(defvar es-rearch-window-foreground-color "White" "*Default 'White'.")
+(defvar es-re-rearch-window-foreground-color "White" "*Default 'White'.")
 (defvar es-rearch-window-background-color "Black" "*Default 'Black'.")
 (defvar es-re-rearch-window-background-color "Black" "*Default 'Black'.")
 (defvar es-target-window)
@@ -34,57 +34,87 @@
 (defvar es-replace-str-window "*replace string*")
 (defvar es-previous-searced-str)
 (defvar es-previous-replaced-str)
+(defvar es-previous-searced-direction nil)
+(defvar es-previous-direction)
 (defvar editable-search-mode-map (make-keymap))
 (defvar editable-re-search-mode-map (make-keymap))
 
 ;;; ------------------------------------------------------------
-;;; hook
+;;; hook and advice
+
 ;;; 選択範囲がある状態でshiftなしのカーソルが打鍵されたらリージョンを解除
 (when es-is-deactivate-region-by-cursor
 	(progn
-		(add-hook 'post-command-hook 'es-post-command-hook-fn)
-		(defun es-post-command-hook-fn ()
-			"Deactivate region by cursor."
-			;; (message "this-event:  %s\nthis-command:%s" last-input-event this-command)
-			(when (and (region-active-p) (memq last-input-event '(left right down up)))
+		;; Hook版
+		;; (add-hook 'post-command-hook 'es-post-command-hook-fn)
+		;; (defun es-post-command-hook-fn ()
+		;; 	"Deactivate region by cursor."
+		;; 	;; (message "this-event:  %s\nthis-command:%s" last-input-event this-command)
+		;; 	(when (and (region-active-p) (memq last-input-event '(left right down up)))
+		;; 		(progn
+		;; 			(cond
+		;; 			 ((memq last-input-event '(right down))
+		;; 				(goto-char (region-end)))
+		;; 			 ((memq last-input-event '(left up))
+		;; 				(goto-char (region-beginning))))
+		;; 			(deactivate-mark)))
+		;; 	;; おまけ（1行目と最終行のカーソルの振る舞いをmac likeに）
+		;; 	(when (and (eq (line-number-at-pos) 1) (memq last-input-event '(up)))
+		;; 		(beginning-of-line))
+		;; 	(when (and (eq (line-number-at-pos) (count-lines 1 (point-max)))
+		;; 						 (memq last-input-event '(down)))
+		;; 		(end-of-line)))
+
+		;; advice版 - こちらのほうが軽い!?
+		(defadvice previous-line (after deactivate-region activate)
+			"Test."
+			(my-deactivate-region))
+		(defadvice next-line (after deactivate-region activate)
+			"Test."
+			(my-deactivate-region))
+		(defadvice left-char (after deactivate-region activate)
+			"Test."
+			(my-deactivate-region))
+		(defadvice right-char (after deactivate-region activate)
+			"Test."
+			(my-deactivate-region))
+
+		(defun my-deactivate-region ()
+			"T."
+			(when (and (region-active-p) (not (memq last-input-event '(S-left S-right S-down S-up))))
 				(progn
 					(cond
 					 ((memq last-input-event '(right down))
 						(goto-char (region-end)))
 					 ((memq last-input-event '(left up))
 						(goto-char (region-beginning))))
-					(deactivate-mark)))
-			;; おまけ（1行目と最終行のカーソルの振る舞いをmac likeに）
-			(when (and (eq (line-number-at-pos) 1) (memq last-input-event '(up)))
-				(beginning-of-line))
-			(when (and (eq (line-number-at-pos) (count-lines 1 (point-max)))
-								 (memq last-input-event '(down)))
-				(end-of-line)))))
+					(deactivate-mark))))))
 
 ;;; 削除によってウィンドウ構成を変えようとしたら検索置換窓を閉じる
 (add-hook 'post-command-hook 'es-delete-window-fn)
 (defun es-delete-window-fn ()
-			 "About search mode windows."
-			 (let
-					 ((search-windowp (windowp (get-buffer-window es-search-str-window)))
-						(replace-windowp (windowp (get-buffer-window es-replace-str-window))))
-				 ;; (message "this-command:%s" this-command)
-				 (when (memq this-command '(delete-window
-																		kill-buffer-and-window
-																		delete-other-windows
-																		contexual-close-window
-																		mouse-delete-window
-																		mouse-delete-other-windows))
-					 (progn
-						 (message "close search windows.")
-						 (when search-windowp
-							 (progn
-								 (select-window (get-buffer-window es-search-str-window))
-								 (kill-buffer-and-window)))
-						 (when replace-windowp
-							 (progn
-								 (select-window (get-buffer-window es-replace-str-window))
-								 (kill-buffer-and-window)))))))
+	"About search mode windows."
+	(let
+			((search-windowp (windowp (get-buffer-window es-search-str-window)))
+			 (replace-windowp (windowp (get-buffer-window es-replace-str-window))))
+		;; (message "this-command:%s" this-command)
+		(when (memq this-command '(delete-window
+															 kill-buffer
+															 kill-buffer-and-window
+															 delete-other-windows
+															 mouse-delete-window
+															 mouse-delete-other-windows
+															 contexual-close-window))
+			(progn
+				(message "close search windows.")
+				(when search-windowp
+					(progn
+						(select-window (get-buffer-window es-search-str-window))
+						(kill-buffer-and-window)))
+				(when replace-windowp
+					(progn
+						(select-window (get-buffer-window es-replace-str-window))
+						(kill-buffer-and-window)))))))
 
 ;;; ------------------------------------------------------------
 ;;; key-binds
@@ -290,6 +320,11 @@
 														 (string= replace-flag-str "re-rep")) t nil))
 				 (is-replace-here (if (string= mode "rep-here") t nil))
 				 target-str)
+
+		;; 検索方向が変わったら向きを変える
+		(when (not (string= es-previous-searced-direction direction-flag-str))
+			(exchange-point-and-mark))
+		(setq es-previous-searced-direction direction-flag-str)
 
 		;; 現在のウィンドウが検索・置換編集用ウィンドウだったら、主たるウィンドウに移動する
 		(if (eq (selected-window) es-target-window) ()

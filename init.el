@@ -63,13 +63,15 @@
 ;; M-x package-install RET flycheck RET
 ;; M-x package-install RET php-mode RET
 ;; M-x package-install RET mic-paren RET
-;; M-x package-install RET tabbar RET
 ;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
 
 ;;; メモ
 
 ;; js2-modeは、M-x install-package RET js2-modeで入りそうなものだったが、なぜか
 ;; not foundになった。M-x list-packagesで、C-s js2-mode RET Installでだったら入った。
+;; elscreenも同様
+;; M-x list-packages RET C-s js2-mode RET Install
+;; M-x list-packages RET C-s elscreen RET Install
 
 ;; tempbuf（idle buffer）を自動的にkill-bufferしてくれるelispだけど、
 ;; 結構不意に必要なbufferをkillしていることがあるので、使わない方向で。
@@ -229,11 +231,19 @@
 ;;; ------------------------------------------------------------
 ;;; Anything関連
 
-;; Anything
+;;; Anything
 (require 'anything)
 (require 'anything-config)
 (add-to-list 'anything-sources 'anything-c-source-emacs-commands)
 (global-set-key (kbd "C-;") 'anything)
+
+;; 編集対象でないバッファを除外(必要な場合、switch-to-buffer)
+;; thx https://github.com/skkzsh/.emacs.d/blob/master/conf/anything-init.el
+(setq anything-c-boring-buffer-regexp
+      (rx "*" (+ not-newline) "*"))
+
+;;; カレントバッファを候補から除外
+(setq anything-allow-skipping-current-buffer t)
 
 ;;; recentf
 ;; 最近開いたファイルの履歴
@@ -289,6 +299,31 @@
 (global-smart-tab-mode)
 
 ;;; ------------------------------------------------------------
+;;; よく使うところに早く移動
+(global-set-key [M-s-down] (lambda () (interactive) (next-block "next")))
+(global-set-key [M-s-up] (lambda () (interactive) (next-block "prev")))
+
+(setq next-block-previous-direction nil)
+(defun next-block (direction)
+	"Go to next block by mode.  DIRECTION[prev|next]."
+	(interactive)
+	(when (not (string= next-block-previous-direction direction))
+			(if (string= direction "prev") (beginning-of-line) (end-of-line)))
+	(setq next-block-previous-direction direction)
+	(let
+			(target)
+		(cond
+		 ((string= major-mode "emacs-lisp-mode")
+			(setq target "^;;; ----+$"))
+		 ((string= major-mode "php-mode")
+			(setq target "^\t+function\\|^\t+class\\|^\t+private\\|^\t+public"))
+		 (t
+			(setq target "^;;; ----+$\\|^■")))
+		(if (string= direction "prev")
+				(re-search-backward target)
+			(re-search-forward target))))
+
+;;; ------------------------------------------------------------
 ;;; 複数箇所選択と編集
 
 ;;; multiple-cursors and smartrep
@@ -320,48 +355,10 @@
 ;;; ------------------------------------------------------------
 ;;; バッファ関連
 
-;;; create-temporary-buffer
-;; あたらしい空のバッファを作る (cmd+t)
-(defun create-temporary-buffer ()
-	"Create temporal buffer."
-	(interactive)
-	(switch-to-buffer (generate-new-buffer "new"))
-	(global-auto-complete-mode t))
-(define-key global-map (kbd "s-t") 'create-temporary-buffer) ; (cmd+t)
+(global-set-key (kbd "s-m") (lambda () (interactive) (switch-to-buffer "*Messages*")))
 
 ;;; ------------------------------------------------------------
 ;;; ウィンドウ関連
-
-;;; mac like close window (cmd+w)
-;; cmd+wで、開いているウィンドウを閉じる。単一のバッファなら、変更を確認してバッファを閉じる
-(defun contexual-close-window ()
-	"Mac like close window (cmd+w)."
-	(interactive)
-	(let
-			(save-type)
-		;; フレームがウインドウ分割をしていない時には、変更の有無を確認
-		(if (one-window-p)
-				;; 変更があるので振る舞いを尋ねる
-				(if (buffer-modified-p)
-						(progn
-							;; アスタリスクで始まるバッファは何も尋ねず閉じる
-							(if (or (string= "*" (substring (buffer-name) 0 1)) buffer-read-only)
-									(kill-buffer)
-								;; 振る舞いを確認する必要があるウィンドウなので、確認する
-								(progn
-									(setq save-type (read-string "overwrite? (1:overrite, 2:save as, 3:close anyway): " nil 'my-history))
-									(cond
-									 ((string-equal save-type "1")
-										(save-buffer))
-									 ((string-equal save-type "2")
-										(progn (call-interactively 'write-file)(save-buffer)))
-									 (t
-										(kill-buffer-and-window))))))
-					;; 変更がないのでkill-buffer-and-window
-					(kill-buffer-and-window))
-			;; フレームがウィンドウ分割をしているので、delete-windowする
-			(delete-window))))
-(global-set-key (kbd "s-w") 'contexual-close-window)
 
 ;;; mac like new window (cmd+n)
 ;; cmd+n でウィンドウを増やす。分割方法は対話式
@@ -407,55 +404,19 @@
 ;;; ------------------------------------------------------------
 ;;; タブ関連
 
-;;; tabbar
-(require 'tabbar)
-(tabbar-mode)
+(require 'elscreen)
+(elscreen-start)
 
-;;; タブ上でマウスホイールを使わない
-(tabbar-mwheel-mode nil)
+;;; タブの先頭に[X]を表示しない
+(setq elscreen-tab-display-kill-screen nil)
+;;; header-lineの先頭に[<->]を表示しない
+(setq elscreen-tab-display-control nil)
 
-;;; グループを使わない
-(setq tabbar-buffer-groups-function nil)
-
-;; 画像を使わないことで軽量化する
-(setq tabbar-use-images nil)
-
-;;; 左側のボタンを消す
-(dolist (btn '(tabbar-buffer-home-button
-							 tabbar-scroll-left-button
-							 tabbar-scroll-right-button))
-	(set btn (cons (cons " " nil)
-								 (cons " " nil))))
-
-;;; 除外するタブ
-;; http://dev.ariel-networks.com/wp/documents/aritcles/emacs/part11
-(defun my-tabbar-buffer-list ()
-	"Remove asterisked buffer tag."
-	(remove-if
-	 (lambda (buffer)
-		 (find (aref (buffer-name buffer) 0) " *"))
-	 (buffer-list)))
-(setq tabbar-buffer-list-function 'my-tabbar-buffer-list)
-
-;;; 色設定
-(set-face-attribute ; バー自体の色
- 'tabbar-default nil
- :background "Gray"
- :height 1.0)
-(set-face-attribute ; アクティブなタブ
- 'tabbar-selected nil
- :background "Black"
- :foreground "White"
- :weight 'bold
- :box nil)
-(set-face-attribute ; 非アクティブなタブ
- 'tabbar-unselected nil
- :background "Gray"
- :foreground "Black"
- :box nil)
-
-(global-set-key [M-s-right] 'tabbar-forward)
-(global-set-key [M-s-left] 'tabbar-backward)
+;;; キーバインド
+(global-set-key [M-s-right] 'elscreen-next)
+(global-set-key [M-s-left] 'elscreen-previous)
+(global-set-key (kbd "s-t") 'elscreen-create)
+(global-set-key (kbd "s-w") 'elscreen-kill-screen-and-buffers)
 
 ;;; ------------------------------------------------------------
 ;;; カーソル関連
@@ -707,7 +668,7 @@
 									(insert "\n" selected)
 									(beginning-of-line))
 			(insert selected))))
-(define-key global-map (kbd "s-d") 'duplicate-region-or-line)
+(global-set-key (kbd "s-d") 'duplicate-region-or-line)
 
 ;;; ------------------------------------------------------------
 ;;; 編集可能な検索置換仕組み
@@ -742,6 +703,7 @@
 
 ;;; ------------------------------------------------------------
 ;;; Todo:
+;; gtag, ctagの導入
 ;; 検索置換において、情報エリアを作って、ターゲットウィンドウと正規表現モードかどうかを表示する
 ;; マルチファイル検索置換
 ;; モードラインを表示しないウィンドウ
