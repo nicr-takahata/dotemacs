@@ -418,34 +418,6 @@
 (global-set-key (kbd "M-s-r") 'remove-html-tags) ; opt+cmd+r
 
 ;;; ------------------------------------------------------------
-;;; 全角数字を半角数字に
-(defun convert-to-single-byte-number ()
-	"Convert multi-byte numbers in region into single-byte number."
-	(interactive)
-	(replace-strings-in-region-by-list
-	 '(("１" . "1")
-		 ("２" . "2")
-		 ("３" . "3")
-		 ("４" . "4")
-		 ("５" . "5")
-		 ("６" . "6")
-		 ("７" . "7")
-		 ("８" . "8")
-		 ("９" . "9")
-		 ("０" . "0"))))
-(global-set-key (kbd "s-u") 'convert-to-single-byte-number)
-
-;;; ------------------------------------------------------------
-;;; 選択範囲を1行にする
-(defun join-multi-lines-to-one ()
-	"Join multi lines."
-	(interactive)
-	(replace-strings-in-region-by-list
-	 '(("\\(\n\\s-*\\)+" . ""))))
-(global-set-key [s-kp-divide] 'join-multi-lines-to-one) ; cmd+/
-(global-set-key (kbd "s-/") 'join-multi-lines-to-one) ; cmd+/
-
-;;; ------------------------------------------------------------
 ;;; Shift+Returnで<br />を入力
 (global-set-key [S-return] "<br />")
 

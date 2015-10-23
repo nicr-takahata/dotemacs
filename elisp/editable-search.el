@@ -308,26 +308,25 @@
 				 (beg 0)
 				 (end 0)
 				 (len-search-string 0)
-				 (re-flag-str (substring mode 0 3))
-				 (direction-flag-str (substring mode -4))
-				 (replace-flag-str (if (>= (length mode) 6) (substring mode 0 6) ""))
-				 (is-re (if (string= re-flag-str "re-") t nil))
-				 (is-next (if (string= direction-flag-str "next") t nil))
-				 (is-prev (if (string= direction-flag-str "prev") t nil))
-				 (is-replace (if (or (string= replace-flag-str "rep-ne")
-														 (string= replace-flag-str "rep-pr")
-														 (string= replace-flag-str "rep-he")
-														 (string= replace-flag-str "re-rep")) t nil))
+				 (direction (substring mode -4))
+				 (is-re (if (string= (substring mode 0 3) "re-") t nil))
+				 (is-next (if (string= direction "next") t nil))
+				 (is-prev (if (string= direction "prev") t nil))
+				 (replace-flag (if (>= (length mode) 6) (substring mode 0 6) ""))
+				 (is-replace (if (or (string= replace-flag "rep-ne")
+														 (string= replace-flag "rep-pr")
+														 (string= replace-flag "rep-he")
+														 (string= replace-flag "re-rep")) t nil))
 				 (is-replace-here (if (string= mode "rep-here") t nil))
 				 target-str)
 
 		;; 検索方向が変わったら向きを変える
-		(when (not (string= es-previous-searced-direction direction-flag-str))
+		(when (and mark-active (not (string= es-previous-searced-direction direction)))
 			(exchange-point-and-mark))
-		(setq es-previous-searced-direction direction-flag-str)
+		(setq es-previous-searced-direction direction)
 
 		;; 現在のウィンドウが検索・置換編集用ウィンドウだったら、主たるウィンドウに移動する
-		(if (eq (selected-window) es-target-window) ()
+		(when (not (eq (selected-window) es-target-window))
 			(select-window es-target-window))
 
 		;; 検索用文字列の取得

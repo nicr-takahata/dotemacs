@@ -32,6 +32,8 @@
 ;; cd ~/.emacs.d/elisp
 ;; curl -0 http://www.emacswiki.org/emacs/download/auto-install.el
 ;; wget http://www.ne.jp/asahi/alpha/kazu/pub/emacs/phpdoc.el
+;; sudo port install global
+;;
 ;;; @ emacs
 ;;; S式はC-x C-eで反映すること
 ;;; 下記コマンド類はM-;でコメントを外してからやるとよい
@@ -63,16 +65,16 @@
 ;; M-x package-install RET flycheck RET
 ;; M-x package-install RET php-mode RET
 ;; M-x package-install RET mic-paren RET
+;; M-x package-install RET projectile RET
 ;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
+;; M-x package-install RET gtags RET
 
-;;; メモ
-
+;;; Memo:
 ;; js2-modeは、M-x install-package RET js2-modeで入りそうなものだったが、なぜか
 ;; not foundになった。M-x list-packagesで、C-s js2-mode RET Installでだったら入った。
 ;; elscreenも同様
 ;; M-x list-packages RET C-s js2-mode RET Install
 ;; M-x list-packages RET C-s elscreen RET Install
-
 ;; tempbuf（idle buffer）を自動的にkill-bufferしてくれるelispだけど、
 ;; 結構不意に必要なbufferをkillしていることがあるので、使わない方向で。
 ;; M-x install-elisp-from-emacswiki RET tempbuf.el RET
@@ -80,7 +82,6 @@
 ;; M-x package-install RET multi-term RET
 
 ;;; Code:
-
 ;;; ------------------------------------------------------------
 ;;; package類のロード等
 
@@ -234,13 +235,15 @@
 ;;; Anything
 (require 'anything)
 (require 'anything-config)
-(add-to-list 'anything-sources 'anything-c-source-emacs-commands)
+(require 'anything-gtags)
+(add-to-list 'anything-sources '(anything-c-source-emacs-commands
+																 anything-c-source-gtags-select))
 (global-set-key (kbd "C-;") 'anything)
 
 ;; 編集対象でないバッファを除外(必要な場合、switch-to-buffer)
 ;; thx https://github.com/skkzsh/.emacs.d/blob/master/conf/anything-init.el
 (setq anything-c-boring-buffer-regexp
-      (rx "*" (+ not-newline) "*"))
+			(rx "*" (+ not-newline) "*"))
 
 ;;; カレントバッファを候補から除外
 (setq anything-allow-skipping-current-buffer t)
@@ -251,6 +254,48 @@
 (recentf-mode 1)
 (setq recentf-exclude '("/TAGS$" "/var/tmp/" ".recentf" "/Fetch Temporary Folder/"))
 (setq recentf-max-saved-items 3000)
+
+;;; projectile
+(require 'projectile)
+(projectile-global-mode)
+
+;;; ------------------------------------------------------------
+;;; gtags
+(require 'gtags)
+(setq gtags-path-style 'relative)
+
+;;; キーバインド
+(setq gtags-mode-hook
+			'(lambda ()
+				 (local-set-key "\M-t" 'gtags-find-tag)
+				 (local-set-key "\M-r" 'gtags-find-rtag)
+				 (local-set-key "\M-s" 'gtags-find-symbol)
+				 (local-set-key "\M-T" 'gtags-pop-stack)))
+
+;;; gtags-mode を使いたい mode の hook に追加する
+(add-hook 'php-mode-hook
+					'(lambda()
+						 (gtags-mode 1)
+						 (gtags-make-complete-list)))
+
+;;; update GTAGS
+;; thx http://qiita.com/yewton/items/d9e686d2f2a092321e34
+(defun update-gtags (&optional prefix)
+	"Update gtags.  PREFIX."
+	(interactive "P")
+	(let ((rootdir (gtags-get-rootpath))
+				(args (if prefix "-v" "-iv")))
+		(when rootdir
+			(let* ((default-directory rootdir)
+						 (buffer (get-buffer-create "*update GTAGS*")))
+				(save-excursion
+					(set-buffer buffer)
+					(erase-buffer)
+					(let ((result (process-file "gtags" nil buffer nil args)))
+						(if (= 0 result)
+								(message "GTAGS successfully updated.")
+							(message "update GTAGS error with exit status %d" result))))))))
+(add-hook 'after-save-hook 'update-gtags)
 
 ;;; ------------------------------------------------------------
 ;;; キーボード操作
@@ -300,8 +345,6 @@
 
 ;;; ------------------------------------------------------------
 ;;; よく使うところに早く移動
-(global-set-key [M-s-down] (lambda () (interactive) (next-block "next")))
-(global-set-key [M-s-up] (lambda () (interactive) (next-block "prev")))
 
 (setq next-block-previous-direction nil)
 (defun next-block (direction)
@@ -316,12 +359,14 @@
 		 ((string= major-mode "emacs-lisp-mode")
 			(setq target "^;;; ----+$"))
 		 ((string= major-mode "php-mode")
-			(setq target "^\t+function\\|^\t+class\\|^\t+private\\|^\t+public"))
+			(setq target "^\t*function\\|^\t*class\\|^\t*private\\|^\t*public"))
 		 (t
 			(setq target "^;;; ----+$\\|^■")))
 		(if (string= direction "prev")
 				(re-search-backward target)
 			(re-search-forward target))))
+(global-set-key [M-s-down] (lambda () (interactive) (next-block "next")))
+(global-set-key [M-s-up] (lambda () (interactive) (next-block "prev")))
 
 ;;; ------------------------------------------------------------
 ;;; 複数箇所選択と編集
@@ -480,13 +525,14 @@
 
 ;;; 右ボタンの割り当て(押しながらの操作)をはずす。
 ;;; thx http://cave.under.jp/_contents/emacs.html#60
-(if window-system (progn
-										(global-unset-key [down-mouse-3])
-										;; マウスの右クリックメニューを出す(押して、離したときにだけメニューが出る)
-										(defun bingalls-edit-menu (event)
-											(interactive "e")
-											(popup-menu menu-bar-edit-menu))
-										(global-set-key [mouse-3] 'bingalls-edit-menu)))
+(if window-system
+		(progn
+			(global-unset-key [down-mouse-3])
+			;; マウスの右クリックメニューを出す(押して、離したときにだけメニューが出る)
+			(defun bingalls-edit-menu (event)
+				(interactive "e")
+				(popup-menu menu-bar-edit-menu))
+			(global-set-key [mouse-3] 'bingalls-edit-menu)))
 
 ;;; ------------------------------------------------------------
 ;;; 自動バイトコンパイル
@@ -671,6 +717,51 @@
 (global-set-key (kbd "s-d") 'duplicate-region-or-line)
 
 ;;; ------------------------------------------------------------
+;;; 全角数字を半角数字に
+(defun convert-to-single-byte-number ()
+	"Convert multi-byte numbers in region into single-byte number."
+	(interactive)
+	(replace-strings-in-region-by-list
+	 '(("１" . "1")
+		 ("２" . "2")
+		 ("３" . "3")
+		 ("４" . "4")
+		 ("５" . "5")
+		 ("６" . "6")
+		 ("７" . "7")
+		 ("８" . "8")
+		 ("９" . "9")
+		 ("０" . "0"))))
+(global-set-key (kbd "s-u") 'convert-to-single-byte-number)
+
+;;; ------------------------------------------------------------
+;;; 選択範囲を1行にする
+(defun join-multi-lines-to-one ()
+	"Join multi lines."
+	(interactive)
+	(require 'editable-search)
+	(es-replace-region "\n\\|^>+ " "" t))
+(global-set-key [s-kp-divide] 'join-multi-lines-to-one) ; cmd+/
+(global-set-key (kbd "s-/") 'join-multi-lines-to-one) ; cmd+/
+
+;;; ------------------------------------------------------------
+;;; メール整形
+(defun add-mail-quotation ()
+	"Add mail quotation."
+	(interactive)
+	(require 'editable-search)
+	(if (string-match "^>" (buffer-substring-no-properties (region-beginning) (region-end)))
+			(es-replace-region "^" ">" t)
+		(es-replace-region "^" "> " t)))
+(defun remove-mail-quotation ()
+	"Add mail quotation."
+	(interactive)
+	(require 'editable-search)
+	(es-replace-region "^>+ +" "" t))
+(global-set-key (kbd "s-}") 'add-mail-quotation)
+(global-set-key (kbd "s-{") 'remove-mail-quotation)
+
+;;; ------------------------------------------------------------
 ;;; 編集可能な検索置換仕組み
 ;;; editable-search
 (custom-set-variables
@@ -700,6 +791,11 @@
 				(setq minor-mode-alist
 							(cons (list mode "") (assq-delete-all mode minor-mode-alist))))
 			my/hidden-minor-modes)
+
+;;; ------------------------------------------------------------
+;;; override init.el
+(when (file-exists-p "~/.emacs.d/init.override.el")
+		(load "~/.emacs.d/init.override.el"))
 
 ;;; ------------------------------------------------------------
 ;;; Todo:
