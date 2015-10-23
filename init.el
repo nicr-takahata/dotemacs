@@ -210,6 +210,12 @@
 (require 'phpdoc)
 (add-hook 'php-mode-hook (lambda () (eldoc-mode t)))
 
+;;; php-modeのタブ幅
+(add-hook 'php-mode-hook
+					'(lambda()
+						 (setq tab-width 2)
+						 (setq indent-tabs-mode t)))
+
 ;;; ------------------------------------------------------------
 ;;; undo関連
 
