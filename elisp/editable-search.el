@@ -32,7 +32,7 @@
 (defvar es-target-window)
 (defvar es-search-str-window "*search string*")
 (defvar es-replace-str-window "*replace string*")
-(defvar es-previous-searced-str)
+(defvar es-previous-searched-str)
 (defvar es-previous-replaced-str)
 (defvar es-previous-searced-direction nil)
 (defvar es-previous-direction)
@@ -65,22 +65,22 @@
 		;; 						 (memq last-input-event '(down)))
 		;; 		(end-of-line)))
 
-		;; advice版 - こちらのほうが軽い!?
+		;; regionの解除advice版 - Hookよりこちらのほうが軽い!?
 		(defadvice previous-line (after deactivate-region activate)
-			"Test."
+			"Deactivate Region by cursor."
 			(my-deactivate-region))
 		(defadvice next-line (after deactivate-region activate)
-			"Test."
+			"Deactivate Region by cursor."
 			(my-deactivate-region))
 		(defadvice left-char (after deactivate-region activate)
-			"Test."
+			"Deactivate Region by cursor."
 			(my-deactivate-region))
 		(defadvice right-char (after deactivate-region activate)
-			"Test."
+			"Deactivate Region by cursor."
 			(my-deactivate-region))
 
 		(defun my-deactivate-region ()
-			"T."
+			"Logic of deactivate region by cursor."
 			(when (and (region-active-p) (not (memq last-input-event '(S-left S-right S-down S-up))))
 				(progn
 					(cond
@@ -88,7 +88,17 @@
 						(goto-char (region-end)))
 					 ((memq last-input-event '(left up))
 						(goto-char (region-beginning))))
-					(deactivate-mark))))))
+					(deactivate-mark))))
+
+		;; 一行目と最終行での上下キーの振る舞い（行末と行頭へ）
+		;; (defadvice previous-line (after goto-the-edge-of-line activate)
+		;; 	"Go to the edge when no more line."
+		;; 	(lambda () (interactive) (when (eq (line-number-at-pos) 1)
+		;; 														 (goto-char 1))))
+		(defadvice next-line (after goto-the-edge-of-line activate)
+			"Go to the edge when no more line."
+			(lambda () (interactive) (when (eq (line-number-at-pos) (count-lines 1 (point-max)))
+																 (end-of-line))))))
 
 ;;; 削除によってウィンドウ構成を変えようとしたら検索置換窓を閉じる
 (add-hook 'post-command-hook 'es-delete-window-fn)
@@ -297,6 +307,15 @@
 			 (goto-char beg)))
 		 (setq deactivate-mark nil))))
 
+;; 文字列の取得
+(defun es-get-str-from-window (type)
+	"Get str from window.  TYPE[search|replace]."
+	(interactive)
+	(let ((window-obj (if (string= type "search") (get-buffer-window es-search-str-window)
+										 (get-buffer-window es-replace-str-window))))
+		(if (windowp window-obj)
+				(with-selected-window window-obj (buffer-string)) nil)))
+
 ;;; ------------------------------------------------------------
 ;;; 検索用バッファの文字列で検索する
 (declare-function es-move-region "es-move-region" ())
@@ -329,22 +348,16 @@
 		(when (not (eq (selected-window) es-target-window))
 			(select-window es-target-window))
 
-		;; 検索用文字列の取得
-		(if (windowp (get-buffer-window es-search-str-window))
-				(with-selected-window (get-buffer-window es-search-str-window)
-					(setq search-str (buffer-string)))
-			(setq search-str (if (boundp 'es-previous-searced-str) es-previous-searced-str nil)))
+		;; 検索用文字列の取得（必須）
+		(setq search-str (es-get-str-from-window "search"))
+		(unless search-str
+			(setq search-str (if (boundp 'es-previous-searched-str) es-previous-searched-str nil)))
+		(unless search-str (error "Error: search word is empty"))
 
-		;; 検索文字列がなければ、エラーを返す
-		(if (not search-str) (error "Error: search word is empty"))
-
-		;; 置換用文字列の取得
-		(if (windowp (get-buffer-window es-replace-str-window))
-				(with-selected-window (get-buffer-window es-replace-str-window)
-					(setq replace-str (buffer-string)))
+		;; 置換用文字列の取得（置換時必須）
+		(setq replace-str (es-get-str-from-window "replace"))
+		(unless replace-str
 			(setq replace-str (if (boundp 'es-previous-replaced-str) es-previous-replaced-str nil)))
-
-		;; 置換モードなのに置換文字列がなければ、エラーを返す
 		(if (and is-replace (not replace-str)) (error "Error: replace word is empty"))
 
 		;; 検索文字列にキャレットを移動しリージョンにする関数
@@ -377,7 +390,7 @@
 		 (t (es-move-region)))
 
 		;; 今回検索・置換した文字を次回用に保存
-		(setq es-previous-searced-str search-str)
+		(setq es-previous-searched-str search-str)
 		(setq es-previous-replaced-str replace-str)))
 
 ;;; ------------------------------------------------------------
@@ -402,18 +415,16 @@
 			(select-window es-target-window))
 
 		;; 検索用文字列の取得
-		(if (windowp (get-buffer-window es-search-str-window))
-				(with-selected-window (get-buffer-window es-search-str-window)
-					(setq search-str (buffer-string)))
-			(setq search-str (if (boundp 'es-previous-searced-str) es-previous-searced-str nil)))
-		(if (not search-str) (error "Error: search word is empty"))
+		(setq search-str (es-get-str-from-window "search"))
+		(unless search-str
+			(setq search-str (if (boundp 'es-previous-searched-str) es-previous-searched-str nil)))
+		(unless search-str (error "Error: search word is empty"))
 
 		;; 置換用文字列の取得
-		(if (windowp (get-buffer-window es-replace-str-window))
-				(with-selected-window (get-buffer-window es-replace-str-window)
-					(setq replace-str (buffer-string)))
+		(setq replace-str (es-get-str-from-window "replace"))
+		(unless replace-str
 			(setq replace-str (if (boundp 'es-previous-replaced-str) es-previous-replaced-str nil)))
-		(if (not replace-str) (error "Error: replace word is empty"))
+		(unless replace-str (error "Error: replace word is empty"))
 
 		;; 選択範囲があればそこを対象とする、なければ、すべてを対象にして良いか尋ねる
 		(if (region-active-p)
@@ -451,12 +462,109 @@
 		(message "%s replaced." cnt)
 
 		;; 今回検索・置換した文字を次回用に保存
-		(setq es-previous-searced-str search-str)
+		(setq es-previous-searched-str search-str)
 		(setq es-previous-replaced-str replace-str)))
 
 ;;; ------------------------------------------------------------
 ;;; Provide
 
 (provide 'editable-search)
+
+
+;;; ------------------------------------------------------------
+;;; experiment マルチファイル検索
+;;; 対象ディレクトリと拡張子を指定したら検索する
+(defvar es-file-list)
+(setq es-file-list (shell-command-to-string "cd ~/Desktop/test/; find ./ -name \"*.txt\" -type f"))
+
+;;; ------------------------------------------------------------
+;;; experiment 検索履歴
+;;; 検索か置換をしたら、候補をファイルに保存する
+;;; thx undohist
+(defcustom es-history-directory
+	(expand-file-name
+	 (concat
+		(if (boundp 'user-emacs-directory) user-emacs-directory "~/.emacs.d")
+		"/es-hist"))
+	"A directory being stored searched/replaced history files.")
+(defvar es-history-filename (concat es-history-directory "/es-hist.dat"))
+
+;; (defun es-initialize ()
+;; 	"Initialize editable seacrh directory."
+;; 	(interactive)
+;; 	(if (not (file-directory-p es-history-directory))
+;; 			(make-directory es-history-directory t))
+;; 	(if (not (file-p (concat es-history-directory "/es-hist.txt"))
+;; 			(make-file es-history-directory t))))
+;; undohistでは、hookを使って、saveしているので、そうするのがよいか。
+
+;; multibyte base64-encode-string
+(defun multibyte-base64-encode-string (str)
+	"Multibyte base64 encode string.  STR."
+	(interactive)
+	(base64-encode-string (encode-coding-string str 'raw-text) t))
+
+(defun multibyte-base64-decode-string (str)
+	"Multibyte base64 decode string.  STR."
+	(interactive)
+	(decode-coding-string (base64-decode-string str) 'utf-8))
+
+(defun es-hist-load ()
+	"Load es history."
+	(interactive)
+		(with-temp-buffer
+			(insert-file-contents es-history-filename)
+			(if (<= (point-max) 2)
+					(list)
+				(read (buffer-string)))))
+
+(defun es-hist-save ()
+	"Save es history."
+	(interactive)
+	(let
+			(search-str
+			 replace-str
+			 history)
+		(when (and (windowp (get-buffer-window es-search-str-window))
+							 (windowp (get-buffer-window es-replace-str-window)))
+			(setq search-str (multibyte-base64-encode-string (es-get-str-from-window "search")))
+			(setq replace-str (multibyte-base64-encode-string (es-get-str-from-window "replace")))
+			(when search-str
+				(with-temp-buffer
+					(insert-file-contents es-history-filename)
+					(setq history (es-hist-load))
+;; 					(setq replace-str (if replace-str replace-str ""))
+;; (message "%s" replace-str)
+					(add-to-list 'history (list search-str replace-str))
+					;; (message (format "%s" history))
+					(insert (format "%s" history))
+					(write-region (point-min) (point-max) es-history-filename nil 0)
+					)
+))))
+
+;; 保存すべき文字列がないときの処理
+;; すでに保存されているセットの場合。古いものを削除して、一番上に
+;; 保存すべき数の上限をdefvarで
+
+(es-hist-save)
+
+
+  ;; (if (consp buffer-undo-list)
+  ;;     (let ((file (make-undohist-file-name (buffer-file-name)))
+  ;;           (contents `((digest . ,(md5 (current-buffer)))
+  ;;                       (undo-list . ,(undohist-encode buffer-undo-list)))))
+  ;;       (with-temp-buffer
+  ;;         (print contents (current-buffer))
+  ;;         (write-region (point-min) (point-max) file nil 0)
+  ;;         (set-file-modes file ?\600)))))
+
+;;; Todo:
+;; 検索履歴
+;; 検索置換のプリセット
+;; emacs likeなデフォルトのキーバインド
+;; 検索時に出る（ことがある）エラーの調査
+;; 検索置換において、情報エリアを作って、ターゲットウィンドウと正規表現モードかどうかを表示する
+;; マルチファイル検索置換
+;; X箇所置換しました。を選択範囲内を置換で表示
 
 ;;; editable-search.el ends here
