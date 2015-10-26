@@ -65,7 +65,6 @@
 ;; M-x package-install RET flycheck RET
 ;; M-x package-install RET php-mode RET
 ;; M-x package-install RET mic-paren RET
-;; M-x package-install RET projectile RET
 ;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
 ;; M-x package-install RET gtags RET
 
@@ -177,6 +176,10 @@
 (setq default-tab-width 2)
 (setq-default indent-tabs-mode t)
 
+;;; cua-modeの設定
+(cua-mode t) ; cua-modeをオン
+(setq cua-enable-cua-keys nil) ; CUAキーバインドを無効にする
+
 ;;; ------------------------------------------------------------
 ;;; モード関連
 
@@ -260,10 +263,6 @@
 (recentf-mode 1)
 (setq recentf-exclude '("/TAGS$" "/var/tmp/" ".recentf" "/Fetch Temporary Folder/*"))
 (setq recentf-max-saved-items 3000)
-
-;;; projectile
-(require 'projectile)
-(projectile-global-mode)
 
 ;;; ------------------------------------------------------------
 ;;; gtags
@@ -374,6 +373,8 @@
 			(setq target "^;;; ----+$"))
 		 ((string= major-mode "php-mode")
 			(setq target "^\t*function\\|^\t*class\\|^\t*private\\|^\t*public"))
+		 ((string= major-mode "web-mode")
+			(setq target "^\t*<h2"))
 		 (t
 			(setq target "^;;; ----+$\\|^■")))
 		(if (string= direction "prev")
@@ -414,7 +415,13 @@
 ;;; ------------------------------------------------------------
 ;;; バッファ関連
 
-(global-set-key (kbd "s-m") (lambda () (interactive) (switch-to-buffer "*Messages*")))
+;;; f2キーでmessageと今のバッファをトグル
+(global-set-key [f2] (lambda () (interactive)
+											 (let (current-buffer-for-return)
+												 (if (eq (selected-window) (get-buffer-window "*Messages*"))
+														 (switch-to-buffer current-buffer-for-return)
+													 (setq current-buffer-for-return (current-buffer))
+													 (switch-to-buffer "*Messages*")))))
 
 ;;; ------------------------------------------------------------
 ;;; ウィンドウ関連
@@ -435,7 +442,7 @@
 (defun resize-selected-frame ()
 	"Resize frame to jidaikobo's default."
 	(interactive)
-	(set-frame-position  (selected-frame) 15 0)
+	(set-frame-position (selected-frame) 0 0)
 	(set-frame-size (selected-frame) 215 55))
 (global-set-key (kbd "s-W") 'resize-selected-frame)
 
@@ -444,7 +451,7 @@
 (add-to-list 'default-frame-alist '(width . 215))
 (add-to-list 'default-frame-alist '(height . 55))
 (add-to-list 'default-frame-alist '(top . 0))
-(add-to-list 'default-frame-alist '(left . 15))
+(add-to-list 'default-frame-alist '(left . 0))
 (add-to-list 'default-frame-alist '(font . "ricty-16"))
 (add-to-list 'default-frame-alist '(background-color . "#201f1f"))
 (add-to-list 'default-frame-alist '(foreground-color . "white"))
@@ -468,6 +475,7 @@
 
 ;;; タブの先頭に[X]を表示しない
 (setq elscreen-tab-display-kill-screen nil)
+
 ;;; header-lineの先頭に[<->]を表示しない
 (setq elscreen-tab-display-control nil)
 
@@ -530,8 +538,9 @@
 	(require 'linum)
 	(setq linum-delay t)
 	(defadvice linum-schedule (around my-linum-schedule () activate)
-		(run-with-idle-timer 0.2 nil #'linum-update-current))	(global-linum-mode t)
-		(setq linum-format "%5d: "))
+		(run-with-idle-timer 0.2 nil #'linum-update-current))
+	(global-linum-mode t)
+	(setq linum-format "%5d: "))
 (show-line-number)
 
 ;;; ------------------------------------------------------------
@@ -592,8 +601,8 @@
 ;; http://nishikawasasaki.hatenablog.com/entry/20120222/1329932699
 ;; dired-find-alternate-file の有効化
 (put 'dired-find-alternate-file 'disabled nil)
-;; RET 標準の dired-find-file では dired バッファが複数作られるので
-;; dired-find-alternate-file を代わりに使う
+
+;; RET 標準の dired-find-file では dired バッファが複数作られるのでdired-find-alternate-file を代わりに使う
 (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file)
 (define-key dired-mode-map (kbd "a") 'dired-find-file)
 
@@ -611,19 +620,15 @@
 												space-mark     ; 表示のマッピング
 												tab-mark
 												))
-
 (setq whitespace-display-mappings
-			'((space-mark ?\u3000 [?\u25a1])
-				;; WARNING: the mapping below has a problem.
-				;; When a TAB occupies exactly one column, it will display the
-				;; character ?\xBB at that column followed by a TAB which goes to
-				;; the next TAB column.
-				;; If this is a problem for you, please, comment the line below.
-				(tab-mark ?\t [?\u00BB ?\t] [?\\ ?\t])))
+			'((tab-mark ?\t [?\u00BB ?\t] [?\\ ?\t])
+				;;(space-mark ?\u3000 [?\u25a1])
+				))
 
 ;;; 保存前に自動でクリーンアップ
 (setq whitespace-action '(auto-cleanup))
 
+;;; whitespaceの見栄え
 (global-whitespace-mode 1)
 
 (set-face-attribute 'whitespace-trailing nil
@@ -760,7 +765,7 @@
 	"Join multi lines."
 	(interactive)
 	(require 'editable-search)
-	(es-replace-region "\n\\|^>+ " "" t))
+	(es-replace-region "\n\\|^>+ \\|\t" "" t))
 (global-set-key [s-kp-divide] 'join-multi-lines-to-one) ; cmd+/
 (global-set-key (kbd "s-/") 'join-multi-lines-to-one) ; cmd+/
 
@@ -770,6 +775,7 @@
 	"Add mail quotation."
 	(interactive)
 	(require 'editable-search)
+	(mail-mode)
 	(if (string-match "^>" (buffer-substring-no-properties (region-beginning) (region-end)))
 			(es-replace-region "^" ">" t)
 		(es-replace-region "^" "> " t)))
@@ -777,6 +783,7 @@
 	"Add mail quotation."
 	(interactive)
 	(require 'editable-search)
+	(mail-mode)
 	(es-replace-region "^>+ +" "" t))
 (global-set-key (kbd "s-}") 'add-mail-quotation)
 (global-set-key (kbd "s-{") 'remove-mail-quotation)
@@ -834,4 +841,4 @@
 ;; 小文字に大文字が続く場合を単語境界とする。
 ;; (add-to-list 'word-separating-categories (cons ")" ")"))
 
-;;; init.el ends here
+;;; jidaikobo.init.el ends here
