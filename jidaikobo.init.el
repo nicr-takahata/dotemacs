@@ -598,6 +598,8 @@
 ;; diredでファイル編集
 (define-key dired-mode-map "r" 'wdired-change-to-wdired-mode)
 
+(ffap-bindings)
+
 ;;; diredでタブを開きすぎないようにする
 ;; http://nishikawasasaki.hatenablog.com/entry/20120222/1329932699
 ;; dired-find-alternate-file の有効化
@@ -800,7 +802,7 @@
 ;;; ------------------------------------------------------------
 ;;; HTMLのマークアップのキーバインド集
 ;;; jidaikobo web authoring set
-(load "jidaikobo-web-authoring-set")
+(require 'jidaikobo-web-authoring-set)
 
 ;;; ------------------------------------------------------------
 ;;; よくあるマイナーモードを非表示

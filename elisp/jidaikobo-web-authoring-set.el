@@ -449,4 +449,9 @@
 	(insert (or (buffer-file-name) (expand-file-name default-directory))))
 (global-set-key (kbd "M-s-k") 'get-current-path)
 
+;;; ------------------------------------------------------------
+;;; Provide
+
+(provide 'jidaikobo-web-authoring-set)
+
 ;;; jidaikobo-web-authoring-set.el ends here
