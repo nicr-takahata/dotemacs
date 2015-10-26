@@ -58,6 +58,7 @@
 		"Deactivate Region by cursor."
 		(my-deactivate-region))
 
+	;; リージョン解除関数
 	(defun my-deactivate-region ()
 		"Logic of deactivate region by cursor."
 		(when (and (region-active-p) (not (memq last-input-event '(S-left S-right S-down S-up))))
@@ -86,27 +87,28 @@
 (add-hook 'post-command-hook 'es-delete-window-fn)
 (defun es-delete-window-fn ()
 	"About search mode windows."
-	(let
-			((search-windowp (windowp (get-buffer-window es-search-str-window)))
-			 (replace-windowp (windowp (get-buffer-window es-replace-str-window))))
-		;; (message "this-command:%s" this-command)
-		(when (memq this-command '(delete-window
-															 kill-buffer
-															 kill-buffer-and-window
-															 delete-other-windows
-															 mouse-delete-window
-															 mouse-delete-other-windows
-															 contexual-close-window))
-			(progn
-				(message "close search windows.")
-				(when search-windowp
-					(progn
-						(select-window (get-buffer-window es-search-str-window))
-						(kill-buffer-and-window)))
-				(when replace-windowp
-					(progn
-						(select-window (get-buffer-window es-replace-str-window))
-						(kill-buffer-and-window)))))))
+	(when (editable-search-mode)
+		(let
+				((search-windowp (windowp (get-buffer-window es-search-str-window)))
+				 (replace-windowp (windowp (get-buffer-window es-replace-str-window))))
+			;; (message "this-command:%s" this-command)
+			(when (memq this-command '(delete-window
+																 kill-buffer
+																 kill-buffer-and-window
+																 delete-other-windows
+																 mouse-delete-window
+																 mouse-delete-other-windows
+																 contexual-close-window))
+				(progn
+					(message "close search windows.")
+					(when search-windowp
+						(progn
+							(select-window (get-buffer-window es-search-str-window))
+							(kill-buffer-and-window)))
+					(when replace-windowp
+						(progn
+							(select-window (get-buffer-window es-replace-str-window))
+							(kill-buffer-and-window))))))))
 
 ;;; ------------------------------------------------------------
 ;;; key-binds
@@ -183,7 +185,7 @@
 					(editable-re-search-mode -1))))))
 
 ;;; ------------------------------------------------------------
-;;; 検索と置換用のウィンドウをdeleteする
+;;; 検索と置換用のウィンドウをdeleteして、editable-seach-modeを抜ける
 (defun es-delete-windows ()
 	"Delete splited windows."
 	(interactive)
@@ -422,25 +424,26 @@
 					(error "Error: no target region"))))
 
 		;; 選択範囲内を置換する
-		(save-excursion
-			(save-restriction
-				(narrow-to-region beg end)
-				(goto-char (point-min))
-				(while (<= (point) (point-max))
-					(progn
-						;; 文字列を走査
-						(if is-re
-								(re-search-forward search-str)
-							(search-forward search-str))
+		(ignore-errors
+			(save-excursion
+				(save-restriction
+					(narrow-to-region beg end)
+					(goto-char (point-min))
+					(while (<= (point) (point-max))
 						(progn
-							;; ヒットした文字長の取得
+							;; 文字列を走査
 							(if is-re
-									(setq len-search-string (length (match-string-no-properties 0)))
-								(setq len-search-string (length search-str)))
-							;; 選択範囲の設定と置換
-							(es-generate-region "next" len-search-string)
-							(es-replace-region search-str replace-str is-re))))
-				(setq cnt (1+ cnt))))
+									(re-search-forward search-str)
+								(search-forward search-str))
+							(progn
+								;; ヒットした文字長の取得
+								(if is-re
+										(setq len-search-string (length (match-string-no-properties 0)))
+									(setq len-search-string (length search-str)))
+								;; 選択範囲の設定と置換
+								(es-generate-region "next" len-search-string)
+								(es-replace-region search-str replace-str is-re)))
+						(setq cnt (1+ cnt))))))
 		(message "%s replaced." cnt)
 
 		;; 今回検索・置換した文字を次回用に保存
@@ -451,7 +454,6 @@
 ;;; Provide
 
 (provide 'editable-search)
-
 
 ;;; ------------------------------------------------------------
 ;;; experiment マルチファイル検索
@@ -540,6 +542,7 @@
   ;;         (set-file-modes file ?\600)))))
 
 ;;; Todo:
+;; editable-search-mode を抜けられない？ -1 じゃないの？
 ;; 検索履歴
 ;; 検索置換のプリセット
 ;; emacs likeなデフォルトのキーバインド
