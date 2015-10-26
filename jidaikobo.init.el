@@ -217,7 +217,8 @@
 (add-hook 'php-mode-hook
 					'(lambda()
 						 (setq tab-width 2)
-						 (setq indent-tabs-mode t)))
+						 (setq indent-tabs-mode t)
+						 (setq c-basic-offset 2)))
 
 ;;; ------------------------------------------------------------
 ;;; undo関連

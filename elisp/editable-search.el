@@ -44,61 +44,43 @@
 
 ;;; 選択範囲がある状態でshiftなしのカーソルが打鍵されたらリージョンを解除
 (when es-is-deactivate-region-by-cursor
-	(progn
-		;; Hook版
-		;; (add-hook 'post-command-hook 'es-post-command-hook-fn)
-		;; (defun es-post-command-hook-fn ()
-		;; 	"Deactivate region by cursor."
-		;; 	;; (message "this-event:  %s\nthis-command:%s" last-input-event this-command)
-		;; 	(when (and (region-active-p) (memq last-input-event '(left right down up)))
-		;; 		(progn
-		;; 			(cond
-		;; 			 ((memq last-input-event '(right down))
-		;; 				(goto-char (region-end)))
-		;; 			 ((memq last-input-event '(left up))
-		;; 				(goto-char (region-beginning))))
-		;; 			(deactivate-mark)))
-		;; 	;; おまけ（1行目と最終行のカーソルの振る舞いをmac likeに）
-		;; 	(when (and (eq (line-number-at-pos) 1) (memq last-input-event '(up)))
-		;; 		(beginning-of-line))
-		;; 	(when (and (eq (line-number-at-pos) (count-lines 1 (point-max)))
-		;; 						 (memq last-input-event '(down)))
-		;; 		(end-of-line)))
+	;; regionの解除advice版 - Hookよりこちらのほうが軽い!?
+	(defadvice previous-line (after deactivate-region activate)
+		"Deactivate Region by cursor."
+		(my-deactivate-region))
+	(defadvice next-line (after deactivate-region activate)
+		"Deactivate Region by cursor."
+		(my-deactivate-region))
+	(defadvice left-char (after deactivate-region activate)
+		"Deactivate Region by cursor."
+		(my-deactivate-region))
+	(defadvice right-char (after deactivate-region activate)
+		"Deactivate Region by cursor."
+		(my-deactivate-region))
 
-		;; regionの解除advice版 - Hookよりこちらのほうが軽い!?
-		(defadvice previous-line (after deactivate-region activate)
-			"Deactivate Region by cursor."
-			(my-deactivate-region))
-		(defadvice next-line (after deactivate-region activate)
-			"Deactivate Region by cursor."
-			(my-deactivate-region))
-		(defadvice left-char (after deactivate-region activate)
-			"Deactivate Region by cursor."
-			(my-deactivate-region))
-		(defadvice right-char (after deactivate-region activate)
-			"Deactivate Region by cursor."
-			(my-deactivate-region))
+	(defun my-deactivate-region ()
+		"Logic of deactivate region by cursor."
+		(when (and (region-active-p) (not (memq last-input-event '(S-left S-right S-down S-up))))
+			(progn
+				(cond
+				 ((memq last-input-event '(right down))
+					(goto-char (region-end)))
+				 ((memq last-input-event '(left up))
+					(goto-char (region-beginning))))
+				(deactivate-mark))))
 
-		(defun my-deactivate-region ()
-			"Logic of deactivate region by cursor."
-			(when (and (region-active-p) (not (memq last-input-event '(S-left S-right S-down S-up))))
-				(progn
-					(cond
-					 ((memq last-input-event '(right down))
-						(goto-char (region-end)))
-					 ((memq last-input-event '(left up))
-						(goto-char (region-beginning))))
-					(deactivate-mark))))
-
-		;; 一行目と最終行での上下キーの振る舞い（行末と行頭へ）
-		;; (defadvice previous-line (after goto-the-edge-of-line activate)
-		;; 	"Go to the edge when no more line."
-		;; 	(lambda () (interactive) (when (eq (line-number-at-pos) 1)
-		;; 														 (goto-char 1))))
-		(defadvice next-line (after goto-the-edge-of-line activate)
-			"Go to the edge when no more line."
-			(lambda () (interactive) (when (eq (line-number-at-pos) (count-lines 1 (point-max)))
-																 (end-of-line))))))
+	;; おまけ。一行目と最終行での上下キーの振る舞い（行末と行頭へ）
+	(defvar prev-line-num (line-number-at-pos))
+	(add-hook 'post-command-hook 'es-goto-the-edge)
+	(defun es-goto-the-edge ()
+		"Go to the edge of the line."
+		;; (message "this-event:  %s\nthis-command:%s" last-input-event this-command)
+		(when (and (eq prev-line-num 1) (memq last-input-event '(up)))
+			(beginning-of-line))
+		(when (and (eq prev-line-num (count-lines 1 (point-max)))
+							 (memq last-input-event '(down)))
+			(end-of-line))
+		(setq prev-line-num (line-number-at-pos))))
 
 ;;; 削除によってウィンドウ構成を変えようとしたら検索置換窓を閉じる
 (add-hook 'post-command-hook 'es-delete-window-fn)
@@ -546,8 +528,7 @@
 ;; すでに保存されているセットの場合。古いものを削除して、一番上に
 ;; 保存すべき数の上限をdefvarで
 
-(es-hist-save)
-
+;; (es-hist-save)
 
   ;; (if (consp buffer-undo-list)
   ;;     (let ((file (make-undohist-file-name (buffer-file-name)))
