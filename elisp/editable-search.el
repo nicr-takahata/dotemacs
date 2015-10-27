@@ -42,19 +42,20 @@
 ;;; ------------------------------------------------------------
 ;;; hook and advice
 
+;; (setq debug-on-error nil)
 ;;; 選択範囲がある状態でshiftなしのカーソルが打鍵されたらリージョンを解除
 (when es-is-deactivate-region-by-cursor
 	;; regionの解除advice版 - Hookよりこちらのほうが軽い!?
-	(defadvice previous-line (after deactivate-region activate)
+	(defadvice previous-line (before deactivate-region activate)
 		"Deactivate Region by cursor."
 		(my-deactivate-region))
-	(defadvice next-line (after deactivate-region activate)
+	(defadvice next-line (before deactivate-region activate)
 		"Deactivate Region by cursor."
 		(my-deactivate-region))
-	(defadvice left-char (after deactivate-region activate)
+	(defadvice left-char (before deactivate-region activate)
 		"Deactivate Region by cursor."
 		(my-deactivate-region))
-	(defadvice right-char (after deactivate-region activate)
+	(defadvice right-char (before deactivate-region activate)
 		"Deactivate Region by cursor."
 		(my-deactivate-region))
 
@@ -62,13 +63,13 @@
 	(defun my-deactivate-region ()
 		"Logic of deactivate region by cursor."
 		(when (and (region-active-p) (not (memq last-input-event '(S-left S-right S-down S-up))))
-			(progn
-				(cond
-				 ((memq last-input-event '(right down))
-					(goto-char (region-end)))
-				 ((memq last-input-event '(left up))
-					(goto-char (region-beginning))))
-				(deactivate-mark))))
+			(message "%s" this-command)
+			(cond
+			 ((memq last-input-event '(right down))
+				(goto-char (region-end)))
+			 ((memq this-command '(left-char previous-line))
+				(goto-char (region-beginning))))
+			(deactivate-mark)))
 
 	;; おまけ。一行目と最終行での上下キーの振る舞い（行末と行頭へ）
 	(defvar prev-line-num (line-number-at-pos))
@@ -112,43 +113,44 @@
 
 ;;; ------------------------------------------------------------
 ;;; key-binds
-(if es-is-use-super
-		(progn
-			;; global-map
-			(define-key global-map (kbd "s-e") (lambda () (interactive)
-																					 (es-enter-mode "set-to-search")))
-			(define-key global-map (kbd "s-E") (lambda () (interactive)
-																					 (es-enter-mode "set-to-replace")))
-			(define-key global-map (kbd "s-f") (lambda () (interactive)
-																					 (es-enter-mode "")))
-			(define-key global-map (kbd "s-g") (lambda () (interactive)
-																					 (es-search-replace "next")))
-			(define-key global-map (kbd "s-G") (lambda () (interactive)
-																					 (es-search-replace "prev")))
-			(define-key global-map (kbd "s-l") (lambda () (interactive)
-																					 (es-search-replace "rep-next")))
-			(define-key global-map (kbd "s-r") (lambda () (interactive)
-																					 (es-search-replace "rep-here")))
-			;; local-map editable-search-mode-map
-			(define-key editable-search-mode-map (kbd "s-R") (lambda () (interactive)
-																												 (es-replace-all "")))
-			(define-key editable-search-mode-map [escape] 'keyboard-quit)
-			(define-key editable-search-mode-map (kbd "s-F") 'es-delete-windows)
-			(define-key editable-search-mode-map (kbd "C-s-f") 'es-toggle-search-mode)
-			(define-key editable-search-mode-map (kbd "s-h") (lambda () (interactive)
-																												 (select-window es-target-window)))
 
-			;; local-map editable-re-search-mode-map
-			(define-key editable-re-search-mode-map (kbd "s-R") (lambda () (interactive)
-																														(es-replace-all "re")))
-			(define-key editable-re-search-mode-map (kbd "s-g") (lambda () (interactive)
-																														(es-search-replace "re-next")))
-			(define-key editable-re-search-mode-map (kbd "s-G") (lambda () (interactive)
-																														(es-search-replace "re-prev")))
-			(define-key editable-re-search-mode-map (kbd "s-l") (lambda () (interactive)
-																														(es-search-replace "re-rep-next")))
-			(define-key editable-re-search-mode-map (kbd "s-r") (lambda () (interactive)
-																														(es-search-replace "re-rep-here")))))
+(when es-is-use-super
+	;; global-map
+	(define-key global-map (kbd "s-e") (lambda () (interactive)
+																			 (es-enter-mode "set-to-search")))
+	(define-key global-map (kbd "s-E") (lambda () (interactive)
+																			 (es-enter-mode "set-to-replace")))
+	(define-key global-map (kbd "s-f") (lambda () (interactive)
+																			 (es-enter-mode "")))
+	(define-key global-map (kbd "s-g") (lambda () (interactive)
+																			 (es-search-replace "next")))
+	(define-key global-map (kbd "s-G") (lambda () (interactive)
+																			 (es-search-replace "prev")))
+	(define-key global-map (kbd "s-l") (lambda () (interactive)
+																			 (es-search-replace "rep-next")))
+	(define-key global-map (kbd "s-r") (lambda () (interactive)
+																			 (es-search-replace "rep-here")))
+
+	;; local-map editable-search-mode-map
+	(define-key editable-search-mode-map (kbd "s-R") (lambda () (interactive)
+																										 (es-replace-all "")))
+	(define-key editable-search-mode-map [escape] 'keyboard-quit)
+	(define-key editable-search-mode-map (kbd "s-F") 'es-delete-windows)
+	(define-key editable-search-mode-map (kbd "C-s-f") 'es-toggle-search-mode)
+	(define-key editable-search-mode-map (kbd "s-h") (lambda () (interactive)
+																										 (select-window es-target-window)))
+
+	;; local-map editable-re-search-mode-map
+	(define-key editable-re-search-mode-map (kbd "s-R") (lambda () (interactive)
+																												(es-replace-all "re")))
+	(define-key editable-re-search-mode-map (kbd "s-g") (lambda () (interactive)
+																												(es-search-replace "re-next")))
+	(define-key editable-re-search-mode-map (kbd "s-G") (lambda () (interactive)
+																												(es-search-replace "re-prev")))
+	(define-key editable-re-search-mode-map (kbd "s-l") (lambda () (interactive)
+																												(es-search-replace "re-rep-next")))
+	(define-key editable-re-search-mode-map (kbd "s-r") (lambda () (interactive)
+																												(es-search-replace "re-rep-here"))))
 
 ;;; ------------------------------------------------------------
 ;;; 検索置換用のマイナーモードを設定する
@@ -482,17 +484,19 @@
 ;; 			(make-file es-history-directory t))))
 ;; undohistでは、hookを使って、saveしているので、そうするのがよいか。
 
-;; multibyte base64-encode-string
+;;; multibyte-base64-encode-string
 (defun multibyte-base64-encode-string (str)
 	"Multibyte base64 encode string.  STR."
 	(interactive)
 	(base64-encode-string (encode-coding-string str 'raw-text) t))
 
+;;; multibyte-base64-decode-string
 (defun multibyte-base64-decode-string (str)
 	"Multibyte base64 decode string.  STR."
 	(interactive)
 	(decode-coding-string (base64-decode-string str) 'utf-8))
 
+;;; es-hist-load
 (defun es-hist-load ()
 	"Load es history."
 	(interactive)
@@ -502,6 +506,7 @@
 					(list)
 				(read (buffer-string)))))
 
+;;; es-hist-save
 (defun es-hist-save ()
 	"Save es history."
 	(interactive)
@@ -517,20 +522,29 @@
 				(with-temp-buffer
 					(insert-file-contents es-history-filename)
 					(setq history (es-hist-load))
-;; 					(setq replace-str (if replace-str replace-str ""))
-;; (message "%s" replace-str)
 					(add-to-list 'history (list search-str replace-str))
-					;; (message (format "%s" history))
 					(insert (format "%s" history))
-					(write-region (point-min) (point-max) es-history-filename nil 0)
-					)
-))))
+					(write-region (point-min) (point-max) es-history-filename nil 0))))))
+
+;;; 履歴から検索置換文字列を復活
+(defun es-hist-prev ()
+	"Call previous set."
+	(let (history
+				current)
+		(with-temp-buffer
+			(insert-file-contents es-history-filename)
+			(setq history (es-hist-load))
+			(setq current (car history))
+			;; (cdr history)
+			(message "%s" current)
+			)))
 
 ;; 保存すべき文字列がないときの処理
 ;; すでに保存されているセットの場合。古いものを削除して、一番上に
 ;; 保存すべき数の上限をdefvarで
 
 ;; (es-hist-save)
+;; (es-hist-prev)
 
   ;; (if (consp buffer-undo-list)
   ;;     (let ((file (make-undohist-file-name (buffer-file-name)))
@@ -543,12 +557,11 @@
 
 ;;; Todo:
 ;; editable-search-mode を抜けられない？ -1 じゃないの？
+;; マルチファイル検索置換
 ;; 検索履歴
 ;; 検索置換のプリセット
-;; emacs likeなデフォルトのキーバインド
 ;; 検索時に出る（ことがある）エラーの調査
 ;; 検索置換において、情報エリアを作って、ターゲットウィンドウと正規表現モードかどうかを表示する
-;; マルチファイル検索置換
-;; X箇所置換しました。を選択範囲内を置換で表示
+;; emacs likeなデフォルトのキーバインド
 
 ;;; editable-search.el ends here
