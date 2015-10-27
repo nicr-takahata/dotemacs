@@ -50,6 +50,7 @@
 ;; (package-initialize)
 ;; M-x install-elisp RET http://cx4a.org/pub/undohist.el
 ;; M-x auto-install-batch RET anything RET
+;; M-x package-install RET descbinds-anything RET
 ;; M-x package-install RET auto-complete RET
 ;; M-x package-install RET undohist RET
 ;; M-x package-install RET undo-tree RET
@@ -249,6 +250,11 @@
 (add-to-list 'anything-sources '(anything-c-source-emacs-commands
 																 anything-c-source-gtags-select))
 (global-set-key (kbd "C-;") 'anything)
+
+;;; descbinds-anythingの乗っ取り
+;; thx http://d.hatena.ne.jp/buzztaiki/20081115/1226760184
+(require 'descbinds-anything)
+(descbinds-anything-install)
 
 ;; 編集対象でないバッファを除外(必要な場合、switch-to-buffer)
 ;; thx https://github.com/skkzsh/.emacs.d/blob/master/conf/anything-init.el
@@ -598,7 +604,28 @@
 ;; diredでファイル編集
 (define-key dired-mode-map "r" 'wdired-change-to-wdired-mode)
 
+;;; 現在位置を開く
 (ffap-bindings)
+
+;;; diredでマークをつけたファイルを開く（F）
+(eval-after-load "dired"
+	'(progn
+		 (define-key dired-mode-map (kbd "F") 'my-dired-find-marked-files)
+		 (defun my-dired-find-marked-files (&optional arg)
+			 "Open each of the marked files, or the file under the point, or when prefix arg, the next N files "
+			 (interactive "P")
+			 (let* ((fn-list (dired-get-marked-files nil arg)))
+				 (mapc 'find-file fn-list)))))
+
+;;; diredでマークをつけたファイルをviewモードで開く（V）
+(eval-after-load "dired"
+	'(progn
+		 (define-key dired-mode-map (kbd "V") 'my-dired-view-marked-files)
+		 (defun my-dired-view-marked-files (&optional arg)
+			 "Open each of the marked files, or the file under the point, or when prefix arg, the next N files "
+			 (interactive "P")
+			 (let* ((fn-list (dired-get-marked-files nil arg)))
+				 (mapc 'view-file fn-list)))))
 
 ;;; diredでタブを開きすぎないようにする
 ;; http://nishikawasasaki.hatenablog.com/entry/20120222/1329932699
