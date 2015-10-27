@@ -210,7 +210,10 @@
 		;; 検索窓、置換窓がすでに開いている場合は、キャレットを移動
 		(if (and is-search-window-exist is-replace-window-exist)
 				(progn
-					(setq es-target-window (selected-window)) ; 対象ウィンドウは毎度明示する
+					;; キャレットが検索置換窓にあったら、target-windowを変更しない
+					(unless (or (equal (selected-window) (get-buffer-window es-search-str-window))
+											(equal (selected-window) (get-buffer-window es-replace-str-window)))
+						(setq es-target-window (selected-window)))
 					(editable-search-mode t)
 					(select-window (get-buffer-window es-search-str-window)))
 			(progn
