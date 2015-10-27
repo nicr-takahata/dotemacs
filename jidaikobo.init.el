@@ -247,9 +247,47 @@
 (require 'anything)
 (require 'anything-config)
 (require 'anything-gtags)
-(add-to-list 'anything-sources '(anything-c-source-emacs-commands
-																 anything-c-source-gtags-select))
-(global-set-key (kbd "C-;") 'anything)
+(require 'anything-grep)
+(global-set-key (kbd "C-;") 'my-anything)
+
+;;; あればgtagsを起点にしてfindし、なければカレントディレクトリを対象にした情報源
+(defvar anything-c-source-find-by-gtags
+	'((name . "Find by gtags or ls")
+		(candidates . (lambda ()
+										(let
+												((default-directory
+													 (with-current-buffer anything-current-buffer default-directory)))
+											(cond
+											 ;; gtags-get-rootpathが返ったらgtagsをあてにして良い
+											 ((gtags-get-rootpath)
+												(split-string
+												 (shell-command-to-string
+													(concat "find " (directory-file-name (gtags-get-rootpath)) " -type f")) "\n"))
+											 ;; findの負荷が高すぎる場所だったらやりすごす
+											 ((member default-directory '("/" "~/"))
+												(split-string
+												 (shell-command-to-string
+													(concat "ls " default-directory)) "\n"))
+											 ;; とりあえず自分以下のファイルをfind
+											 (t
+												(split-string (shell-command-to-string (concat "find " (directory-file-name default-directory) " -type f")) "\n"))))))
+		(type . file)
+		(requires-pattern . 3)
+		(delayed)))
+
+;;; my-anything
+(defun my-anything ()
+	"Anything command included find by gtags."
+	(interactive)
+	(anything-other-buffer
+	 '((anything-c-source-emacs-commands
+			anything-c-source-gtags-select
+			anything-c-source-find-by-gtags)
+		 anything-c-source-buffers-list
+		 anything-c-source-recentf
+		 anything-c-source-files-in-current-dir+
+		 anything-c-source-find-by-gtags)
+	 "*my-anything*"))
 
 ;;; descbinds-anythingの乗っ取り
 ;; thx http://d.hatena.ne.jp/buzztaiki/20081115/1226760184
@@ -346,6 +384,10 @@
 (define-key isearch-mode-map "\e" 'isearch-abort) ; \e seems to work better for terminals
 (global-set-key [escape] 'keyboard-escape-quit) ; everywhere else
 (define-key minibuffer-inactive-mode-map [escape] 'keyboard-quit) ; minibuffer
+
+;;; control+shift+cursorでウィンドウ内バッファ履歴
+(global-set-key [C-S-left] 'switch-to-prev-buffer)
+(global-set-key [C-S-right] 'switch-to-next-buffer)
 
 ;;; ミニバッファでcmd+dでDesktopへ
 (define-key minibuffer-local-map (kbd "s-d")
@@ -475,7 +517,7 @@
 (add-hook 'after-make-frame-functions 'show-line-number)
 
 ;;; ------------------------------------------------------------
-;;; タブ関連
+;;; タブ関連 - elscreen
 
 (require 'elscreen)
 (elscreen-start)
@@ -490,7 +532,10 @@
 (global-set-key [M-s-right] 'elscreen-next)
 (global-set-key [M-s-left] 'elscreen-previous)
 (global-set-key (kbd "s-t") 'elscreen-create)
-(global-set-key (kbd "s-w") 'elscreen-kill-screen-and-buffers)
+(global-set-key (kbd "s-w") (lambda () (interactive)
+															(if (elscreen-one-screen-p)
+																	(kill-buffer)
+																(elscreen-kill-screen-and-buffers))))
 
 ;;; ------------------------------------------------------------
 ;;; カーソル関連
