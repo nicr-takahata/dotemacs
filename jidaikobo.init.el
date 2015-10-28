@@ -85,21 +85,24 @@
 ;;; ------------------------------------------------------------
 ;;; package類のロード等
 
+(defvar my-packages-initialize t "*Default t'.")
+
+(when my-packages-initialize
 ;;; load-pathの追加
-(add-to-list 'load-path "~/.emacs.d/elisp")
+	(add-to-list 'load-path "~/.emacs.d/elisp")
 
 ;;; auto-install
-(require 'auto-install)
-(setq auto-install-directory "~/.emacs.d/elisp")
-(auto-install-update-emacswiki-package-name t)
-(auto-install-compatibility-setup)
+	(require 'auto-install)
+	(setq auto-install-directory "~/.emacs.d/elisp")
+	(auto-install-update-emacswiki-package-name t)
+	(auto-install-compatibility-setup)
 
 ;;; packages
-(require 'package)
-(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
-(add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/") t)
-(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
-(package-initialize)
+	(require 'package)
+	(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
+	(add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/") t)
+	(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
+	(package-initialize))
 
 ;;; ------------------------------------------------------------
 ;;; 全体設定
