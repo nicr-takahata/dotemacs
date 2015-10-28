@@ -160,18 +160,12 @@
 ;;; 終了時にオートセーブファイルを消す
 (setq delete-auto-save-files t)
 
-;;; 関数名の表示
-(which-func-mode 1)
-
 ;;; ツールバーを非表示
 ;; M-x tool-bar-mode で表示非表示を切り替えられる
 (tool-bar-mode -1)
 
 ;;; タイトルバーにファイル名表示
 (setq frame-title-format (format "%%f %%* Emacs@%s" (system-name)))
-
-;;; 何文字目にいるか表示
-(column-number-mode 1)
 
 ;;; ミニバッファ履歴を次回Emacs起動時にも保存する
 (savehist-mode 1)
@@ -278,6 +272,26 @@
 		(requires-pattern . 3)
 		(delayed)))
 
+;;; よく使うプロジェクトに対する操作
+(defvar anything-c-source-cd-to-projects
+	'((name . "cd to projects")
+		(candidates . (lambda () (split-string (shell-command-to-string "find ~/Sites -maxdepth 1 -type d") "\n")))
+		(action . (("Change internal directory" . anything-change-internal-directory)
+							 ("Dred" . anything-project-dired)
+							 ("Generate gtags at project" . anything-generate-gtags-at-project)))))
+
+(defun anything-change-internal-directory (dir)
+	"Change internal directory at Sites.  DIR is path."
+	(cd dir))
+
+(defun anything-project-dired (dir)
+	"Dired.  DIR is path."
+	(dired dir))
+
+(defun anything-generate-gtags-at-project (dir)
+	"Generate gtags at project.  DIR is path."
+	(shell-command-to-string (concat "cd " dir " ; gtags -v")))
+
 ;;; my-anything
 (defun my-anything ()
 	"Anything command included find by gtags."
@@ -289,8 +303,12 @@
 		 anything-c-source-buffers-list
 		 anything-c-source-recentf
 		 anything-c-source-files-in-current-dir+
+		 anything-c-source-cd-to-projects
 		 anything-c-source-find-by-gtags)
 	 "*my-anything*"))
+
+;;; anything-imenu
+(global-set-key (kbd "C-,") 'anything-imenu)
 
 ;;; descbinds-anythingの乗っ取り
 ;; thx http://d.hatena.ne.jp/buzztaiki/20081115/1226760184
@@ -599,6 +617,39 @@
 (show-line-number)
 
 ;;; ------------------------------------------------------------
+;;; モードライン設定
+
+;;; 関数名の表示
+(which-func-mode 1)
+
+;;; 何文字目にいるか表示
+(column-number-mode 1)
+
+;; モードラインにカレントディレクトリを表示する
+(let ((ls (member 'mode-line-buffer-identification mode-line-format)))
+	(setcdr ls
+					(cons
+					 '(:eval (concat " (" (abbreviate-file-name default-directory) ")"))
+					 (cdr ls))))
+
+;;; よくあるマイナーモードを非表示
+;; thx http://qiita.com/tadsan/items/8b5976682b955788c262
+;; これは一通り処理が終わった後呼ぶ必要がある。
+(setq my/hidden-minor-modes
+			'(undo-tree-mode
+				eldoc-mode
+				magit-auto-revert-mode
+				smart-tab-mode
+				flycheck-mode
+				abbrev-mode
+				helm-mode))
+
+(mapc (lambda (mode)
+				(setq minor-mode-alist
+							(cons (list mode "") (assq-delete-all mode minor-mode-alist))))
+			my/hidden-minor-modes)
+
+;;; ------------------------------------------------------------
 ;;; マウス設定
 
 ;;; 右ボタンの割り当て(押しながらの操作)をはずす。
@@ -878,24 +929,6 @@
 ;;; HTMLのマークアップのキーバインド集
 ;;; jidaikobo web authoring set
 (require 'jidaikobo-web-authoring-set)
-
-;;; ------------------------------------------------------------
-;;; よくあるマイナーモードを非表示
-;; thx http://qiita.com/tadsan/items/8b5976682b955788c262
-;; これは一通り処理が終わった後呼ぶ必要がある。
-(setq my/hidden-minor-modes
-			'(undo-tree-mode
-				eldoc-mode
-				magit-auto-revert-mode
-				smart-tab-mode
-				flycheck-mode
-				abbrev-mode
-				helm-mode))
-
-(mapc (lambda (mode)
-				(setq minor-mode-alist
-							(cons (list mode "") (assq-delete-all mode minor-mode-alist))))
-			my/hidden-minor-modes)
 
 ;;; ------------------------------------------------------------
 ;;; Todo:
