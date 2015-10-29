@@ -68,18 +68,17 @@
 ;; M-x package-install RET mic-paren RET
 ;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
 ;; M-x package-install RET gtags RET
+;; M-x package-install RET open-junk-file RET
+;; M-x package-install RET bind-key RET
 
 ;;; Memo:
-;; js2-modeは、M-x install-package RET js2-modeで入りそうなものだったが、なぜか
-;; not foundになった。M-x list-packagesで、C-s js2-mode RET Installでだったら入った。
-;; elscreenも同様
-;; M-x list-packages RET C-s js2-mode RET Install
-;; M-x list-packages RET C-s elscreen RET Install
+;; magit, js2-mode, elscreenは、M-x install-packageで、入らなかった。
+;; M-x list-packagesで、C-sで探し、ページ移動の後installでなら入る。
+
+;;; Memo2:
 ;; tempbuf（idle buffer）を自動的にkill-bufferしてくれるelispだけど、
 ;; 結構不意に必要なbufferをkillしていることがあるので、使わない方向で。
-;; M-x install-elisp-from-emacswiki RET tempbuf.el RET
 ;; multi-termもよさそうだけど、やっぱりterminalを使う。
-;; M-x package-install RET multi-term RET
 
 ;;; Code:
 ;;; ------------------------------------------------------------
@@ -104,6 +103,9 @@
 	(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
 	(package-initialize))
 
+;;; init.elで使うパッケージ
+(require 'bind-key)
+
 ;;; ------------------------------------------------------------
 ;;; 全体設定
 
@@ -111,13 +113,17 @@
 (delete-selection-mode t)
 
 ;;; opt+¥でバックスラッシュを入力
-(global-set-key (kbd "M-¥") "\\")
+(bind-key* "M-¥" "\\")
 
-;;; s+RETでeval-buffer
-(global-set-key [s-return] 'eval-buffer)
+;;; s+RETでeval-bufferかeval-region
+(bind-key* "<s-return>" (lambda () (interactive)
+														 (if (region-active-p)
+																 (eval-region (region-beginning) (region-end))
+															 (eval-buffer))
+														 (message "eval done.")))
 
 ;;; ウィンドウ切り替え (opt+tab)
-(global-set-key [M-tab] 'other-window)
+(bind-key* "<M-tab>" 'other-window)
 
 ;;; 自動分割は原則左右で
 (setq split-height-threshold nil)
@@ -139,7 +145,7 @@
 (setq scroll-preserve-screen-position t)
 
 ;;; ドラッグアンドドロップでファイルを開く＋あたらしいウィンドウでひらかない
-(global-set-key [ns-drag-file] 'ns-find-file)
+(bind-key* "<ns-drag-file>" 'ns-find-file)
 (setq ns-pop-up-frames nil)
 
 ;;; 起動画面を抑止
@@ -196,8 +202,8 @@
 (load "flycheck")
 (add-hook 'after-init-hook #'global-flycheck-mode)
 (add-hook 'php-mode-hook 'flycheck-mode)
-(global-set-key [M-up] 'flycheck-previous-error) ; previous error (M+up)
-(global-set-key [M-down] 'flycheck-next-error) ; next error (M+down)
+(bind-key* "<M-up>" 'flycheck-previous-error) ; previous error (M+up)
+(bind-key* "<M-down>" 'flycheck-next-error) ; next error (M+down)
 
 ;;; eldoc
 (require 'eldoc-extension)
@@ -234,8 +240,8 @@
 ;;; point-undo
 ;; カーソル位置履歴 (undo: M-s-left, redo: M-s-right)
 (require 'point-undo)
-(global-set-key [S-s-left] 'point-undo)
-(global-set-key [S-s-right] 'point-redo)
+(bind-key* "<S-s-left>" 'point-undo)
+(bind-key* "<S-s-right>" 'point-redo)
 
 ;;; ------------------------------------------------------------
 ;;; Anything関連
@@ -245,7 +251,7 @@
 (require 'anything-config)
 (require 'anything-gtags)
 (require 'anything-grep)
-(global-set-key (kbd "C-;") 'my-anything)
+(bind-key* "C-;" 'my-anything)
 
 ;;; あればgtagsを起点にしてfindし、なければカレントディレクトリを対象にした情報源
 (defvar anything-c-source-find-by-gtags
@@ -277,7 +283,7 @@
 	'((name . "cd to projects")
 		(candidates . (lambda () (split-string (shell-command-to-string "find ~/Sites -maxdepth 1 -type d") "\n")))
 		(action . (("Change internal directory" . anything-change-internal-directory)
-							 ("Dred" . anything-project-dired)
+							 ("Dired" . anything-project-dired)
 							 ("Generate gtags at project" . anything-generate-gtags-at-project)))))
 
 (defun anything-change-internal-directory (dir)
@@ -308,7 +314,7 @@
 	 "*my-anything*"))
 
 ;;; anything-imenu
-(global-set-key (kbd "C-,") 'anything-imenu)
+(bind-key* "C-," 'anything-imenu)
 
 ;;; descbinds-anythingの乗っ取り
 ;; thx http://d.hatena.ne.jp/buzztaiki/20081115/1226760184
@@ -319,9 +325,6 @@
 ;; thx https://github.com/skkzsh/.emacs.d/blob/master/conf/anything-init.el
 (setq anything-c-boring-buffer-regexp
 			(rx "*" (+ not-newline) "*"))
-
-;;; カレントバッファを候補から除外
-(setq anything-allow-skipping-current-buffer t)
 
 ;;; recentf
 ;; 最近開いたファイルの履歴
@@ -374,41 +377,44 @@
 ;;; mac likeなcmd関係
 ;; thx http://d.hatena.ne.jp/gan2/20080109/1199887209
 ;; thx http://www.unixuser.org/~euske/doc/emacsref/#file
-(global-set-key (kbd "s-a") 'mark-whole-buffer) ; select all (cmd+a)
-(global-set-key (kbd "s-c") 'kill-ring-save) ; copy (cmd+c)
-(global-set-key (kbd "s-x") 'kill-region) ; cut (cmd+x)
-(global-set-key (kbd "s-v") 'yank) ; paste (cmd+v)
-(global-set-key (kbd "s-s") 'save-buffer) ; save (cmd+s)
-(global-set-key (kbd "s-S") 'write-file) ; save as (cmd+shift+s)
-(global-set-key (kbd "s-o") 'find-file) ; open (cmd+o)
-(global-set-key (kbd "s-z") 'undo-tree-undo) ; undo (cmd+z)
-(global-set-key (kbd "s-Z") 'undo-tree-redo) ; redo (cmd+shift+z)
-(global-set-key (kbd "s-+") 'text-scale-increase) ; resize increase (cmd++)
-(global-set-key [s-kp-add] 'text-scale-increase) ; resize increase (cmd++)
-(global-set-key (kbd "s--") 'text-scale-decrease) ; resize decrease (cmd+-)
-(global-set-key [s-kp-subtract] 'text-scale-decrease) ; resize decrease (cmd+-)
-;; (global-set-key [s-kp-equal] (text-scale-mode 0))
-;; (global-set-key [s-kp-equal] (text-scale-mode 0))
-;; (global-set-key (kbd "s-=") (text-scale-mode 0))
-;; (global-set-key [s-kp-0] (text-scale-mode 0))
-;; (global-set-key (kbd "s-0") (text-scale-mode 0))
-(global-set-key (kbd "s-q") 'save-buffers-kill-emacs) ; quit (cmd+q)
-(global-set-key [s-up] 'beginning-of-buffer) ; cmd+up
-(global-set-key [s-down] 'end-of-buffer) ; cmd+down
-(global-set-key [s-left] 'beginning-of-line) ; cmd+left
-(global-set-key [s-right] 'end-of-line) ; cmd+right
+(bind-key* "s-a" 'mark-whole-buffer) ; select all (cmd+a)
+(bind-key* "s-c" 'kill-ring-save) ; copy (cmd+c)
+(bind-key* "s-x" 'kill-region) ; cut (cmd+x)
+(bind-key* "s-v" 'yank) ; paste (cmd+v)
+(bind-key* "s-s" 'save-buffer) ; save (cmd+s)
+(bind-key* "s-S" 'write-file) ; save as (cmd+shift+s)
+(bind-key* "s-o" 'find-file) ; open (cmd+o)
+(bind-key* "s-z" 'undo-tree-undo) ; undo (cmd+z)
+(bind-key* "s-Z" 'undo-tree-redo) ; redo (cmd+shift+z)
+(bind-key* "s-+" 'text-scale-increase) ; resize increase (cmd++)
+(bind-key* "<s-kp-add>" 'text-scale-increase) ; resize increase (cmd++)
+(bind-key* "s--" 'text-scale-decrease) ; resize decrease (cmd+-)
+(bind-key* "<s-kp-subtract>" 'text-scale-decrease) ; resize decrease (cmd+-)
+;; (bind-key* "s-kp-equal" (text-scale-mode 0))
+;; (bind-key* "s-kp-equal" (text-scale-mode 0))
+;; (bind-key* "s-=" (text-scale-mode 0))
+;; (bind-key* "s-kp-0" (text-scale-mode 0))
+;; (bind-key* "s-0" (text-scale-mode 0))
+(bind-key* "s-q" 'save-buffers-kill-emacs) ; quit (cmd+q)
+(bind-key* "<s-up>" 'beginning-of-buffer) ; cmd+up
+(bind-key* "<s-down>" 'end-of-buffer) ; cmd+down
+(bind-key* "<s-left>" 'beginning-of-line) ; cmd+left
+(bind-key* "<s-right>" 'end-of-line) ; cmd+right
+
+;; (bind-key* "M-right" 'forward-symbol)
+;; (bind-key* "M-left" (lambda () (interactive) (forward-symbol -1)))
 
 ;;; escでM-g
 ;; http://emacswiki.org/emacs/CancelingInEmacs
 (setq normal-escape-enabled t)
 (define-key isearch-mode-map [escape] 'isearch-abort) ; isearch
 (define-key isearch-mode-map "\e" 'isearch-abort) ; \e seems to work better for terminals
-(global-set-key [escape] 'keyboard-escape-quit) ; everywhere else
+(bind-key* "<escape>" 'keyboard-escape-quit) ; everywhere else
 (define-key minibuffer-inactive-mode-map [escape] 'keyboard-quit) ; minibuffer
 
 ;;; control+shift+cursorでウィンドウ内バッファ履歴
-(global-set-key [C-S-left] 'switch-to-prev-buffer)
-(global-set-key [C-S-right] 'switch-to-next-buffer)
+(bind-key* "<C-S-left>" 'switch-to-prev-buffer)
+(bind-key* "<C-S-right>" 'switch-to-next-buffer)
 
 ;;; ミニバッファでcmd+dでDesktopへ
 (define-key minibuffer-local-map (kbd "s-d")
@@ -418,8 +424,8 @@
 		(insert "~/Desktop/")))
 
 ;;; M-g or cmd+opt+j で指定行へジャンプ
-(global-set-key "\M-g" 'goto-line)
-(global-set-key (kbd "M-s-j") 'goto-line)
+(bind-key* "M-g" 'goto-line)
+(bind-key* "M-s-j" 'goto-line)
 
 ;;; smart-tab
 ;; コンテキストに応じたtabキー。auto-completeと共存
@@ -450,8 +456,8 @@
 		(if (string= direction "prev")
 				(re-search-backward target)
 			(re-search-forward target))))
-(global-set-key [M-s-down] (lambda () (interactive) (next-block "next")))
-(global-set-key [M-s-up] (lambda () (interactive) (next-block "prev")))
+(bind-key* "<M-s-down>" (lambda () (interactive) (next-block "next")))
+(bind-key* "<M-s-up>" (lambda () (interactive) (next-block "prev")))
 
 ;;; ------------------------------------------------------------
 ;;; 複数箇所選択と編集
@@ -462,8 +468,8 @@
 
 (declare-function smartrep-define-key "smartrep")
 
-(global-set-key (kbd "C-M-c") 'mc/edit-lines)
-(global-set-key (kbd "C-M-r") 'mc/mark-all-in-region)
+(bind-key* "C-M-c" 'mc/edit-lines)
+(bind-key* "C-M-r" 'mc/mark-all-in-region)
 
 (global-unset-key "\C-t")
 
@@ -486,7 +492,7 @@
 ;;; バッファ関連
 
 ;;; f2キーでmessageと今のバッファをトグル
-(global-set-key [f2] (lambda () (interactive)
+(bind-key* "<f2>" (lambda () (interactive)
 											 (let (current-buffer-for-return)
 												 (if (eq (selected-window) (get-buffer-window "*Messages*"))
 														 (switch-to-buffer current-buffer-for-return)
@@ -503,7 +509,7 @@
 	(interactive "nchoose (holizntal:1, vertical:2):")
 	(cond ((eq act 2) (split-window-horizontally))
 				(t (split-window-vertically))))
-(global-set-key (kbd "s-n") 'create-new-window-intaractive)
+(bind-key* "s-n" 'create-new-window-intaractive)
 
 ;;; ------------------------------------------------------------
 ;;; フレーム関連
@@ -514,7 +520,7 @@
 	(interactive)
 	(set-frame-position (selected-frame) 0 0)
 	(set-frame-size (selected-frame) 215 55))
-(global-set-key (kbd "s-W") 'resize-selected-frame)
+(bind-key* "s-W" 'resize-selected-frame)
 
 ;;; フレーム初期値
 (add-to-list 'default-frame-alist '(alpha . (1.00 1.00)))
@@ -534,13 +540,14 @@
 	(switch-to-buffer-other-frame "*new1*")
 	;; あたらしいフレームでも行番号表示を維持したいが、うまくいかない？
 	(show-line-number))
-(global-set-key (kbd "s-N") 'create-new-frame)
+(bind-key* "s-N" 'create-new-frame)
 (add-hook 'after-make-frame-functions 'show-line-number)
 
 ;;; ------------------------------------------------------------
 ;;; タブ関連 - elscreen
 
 (require 'elscreen)
+(require 'open-junk-file)
 (elscreen-start)
 
 ;;; タブの先頭に[X]を表示しない
@@ -550,13 +557,17 @@
 (setq elscreen-tab-display-control nil)
 
 ;;; キーバインド
-(global-set-key [M-s-right] 'elscreen-next)
-(global-set-key [M-s-left] 'elscreen-previous)
-(global-set-key (kbd "s-t") 'elscreen-create)
-(global-set-key (kbd "s-w") (lambda () (interactive)
-															(if (elscreen-one-screen-p)
-																	(kill-buffer)
-																(elscreen-kill-screen-and-buffers))))
+(bind-key* "<M-s-right>" 'elscreen-next)
+(bind-key* "<M-s-left>" 'elscreen-previous)
+;; (bind-key* "s-t" 'elscreen-create)
+(bind-key* "s-t" (lambda () (interactive)
+															(elscreen-create)
+															(open-junk-file)))
+(bind-key* "s-w" (lambda () (interactive)
+															(cond
+															 ((not (one-window-p)) (delete-other-windows))
+															 ((elscreen-one-screen-p) (kill-buffer))
+															 (t (elscreen-kill-screen-and-buffers)))))
 
 ;;; ------------------------------------------------------------
 ;;; カーソル関連
@@ -579,7 +590,7 @@
 	(let (($starting-position (progn (back-to-indentation) (point))))
 		(if (eq $starting-position position)
 				(move-beginning-of-line 1))))
-(global-set-key (kbd "C-a") 'my-goto-line-beginning-or-indent)
+(bind-key* "C-a" 'my-goto-line-beginning-or-indent)
 
 ;;; ------------------------------------------------------------
 ;;; 行設定
@@ -661,7 +672,7 @@
 			(defun bingalls-edit-menu (event)
 				(interactive "e")
 				(popup-menu menu-bar-edit-menu))
-			(global-set-key [mouse-3] 'bingalls-edit-menu)))
+			(bind-key* "<mouse-3>" 'bingalls-edit-menu)))
 
 ;;; shift+clickでregion作成
 ;; thx http://superuser.com/questions/521223/shift-click-to-extend-marked-region
@@ -677,6 +688,11 @@
 (require 'auto-async-byte-compile)
 (setq auto-async-byte-compile-exclude-files-regexp "init.el")
 (add-hook 'emacs-lisp-mode-hook 'enable-auto-async-byte-compile-mode)
+
+;;; ------------------------------------------------------------
+;;; git
+
+
 
 ;;; ------------------------------------------------------------
 ;;; 釣り合いのとれる括弧のハイライト
@@ -806,7 +822,7 @@
 		 (if asciip "en" "ja")
 		 (if asciip "ja" "en")
 		 string)))
-(global-set-key (kbd "C-c t") 'google-translate-enja-or-jaen)
+(bind-key* "C-c t" 'google-translate-enja-or-jaen)
 
 ;;; ------------------------------------------------------------
 ;;; auto-complete
@@ -868,7 +884,7 @@
 									(insert "\n" selected)
 									(beginning-of-line))
 			(insert selected))))
-(global-set-key (kbd "s-d") 'duplicate-region-or-line)
+(bind-key* "s-d" 'duplicate-region-or-line)
 
 ;;; ------------------------------------------------------------
 ;;; 全角数字を半角数字に
@@ -886,7 +902,7 @@
 		 ("８" . "8")
 		 ("９" . "9")
 		 ("０" . "0"))))
-(global-set-key (kbd "s-u") 'convert-to-single-byte-number)
+(bind-key* "s-u" 'convert-to-single-byte-number)
 
 ;;; ------------------------------------------------------------
 ;;; 選択範囲を1行にする
@@ -895,8 +911,8 @@
 	(interactive)
 	(require 'editable-search)
 	(es-replace-region "\n\\|^>+ \\|\t" "" t))
-(global-set-key [s-kp-divide] 'join-multi-lines-to-one) ; cmd+/
-(global-set-key (kbd "s-/") 'join-multi-lines-to-one) ; cmd+/
+(bind-key* "<s-kp-divide>" 'join-multi-lines-to-one) ; cmd+/
+(bind-key* "s-/" 'join-multi-lines-to-one) ; cmd+/
 
 ;;; ------------------------------------------------------------
 ;;; メール整形
@@ -914,8 +930,23 @@
 	(require 'editable-search)
 	(mail-mode)
 	(es-replace-region "^>+ +" "" t))
-(global-set-key (kbd "s-}") 'add-mail-quotation)
-(global-set-key (kbd "s-{") 'remove-mail-quotation)
+(bind-key* "s-}" 'add-mail-quotation)
+(bind-key* "s-{" 'remove-mail-quotation)
+
+;; ucs-normalize-NFC-region で濁点分離を直す
+;; M-x ucs-normalize-NFC-buffer または "C-x RET u" で、
+;; バッファ全体の濁点分離を直します。
+;; http://d.hatena.ne.jp/nakamura001/20120529/1338305696
+;; http://www.sakito.com/2010/05/mac-os-x-normalization.html
+(require 'ucs-normalize)
+(prefer-coding-system 'utf-8)
+(setq file-name-coding-system 'utf-8-hfs)
+(setq locale-coding-system 'utf-8-hfs)
+(defun ucs-normalize-NFC-buffer ()
+  (interactive)
+  (ucs-normalize-NFC-region (point-min) (point-max))
+  )
+(bind-key* "<C-x return u>" 'ucs-normalize-NFC-buffer)
 
 ;;; ------------------------------------------------------------
 ;;; 編集可能な検索置換仕組み
@@ -942,14 +973,18 @@
 ;; (thing-at-point)
 
 ;;; ------------------------------------------------------------
-;;; 単語境界を細かく
+;; 単語境界を細かく
+;; マウスのダブルクリックでシンボル単位の選択（アンダーバーもハイフンもまとめて選択したいのでたぶんシンボル単位の選択になる。Jedit Xで括弧の上でのダブルクリックの挙動についても。）もともとそうなってた。
 ;; 文字カテゴリの作成
+;; http://smallsteps.seesaa.net/article/123661899.html
 ;; (define-category ?U "Upper case")
 ;; (define-category ?L "Lower case")
 ;; ;; 文字の登録。とりあえずはAからZまでの英字のみ。
 ;; (modify-category-entry (cons ?A ?Z) ?U)
 ;; (modify-category-entry (cons ?a ?z) ?L)
 ;; 小文字に大文字が続く場合を単語境界とする。
-;; (add-to-list 'word-separating-categories (cons ")" ")"))
+;; (add-to-list 'word-separating-categories (cons ?L ?U))
+
+
 
 ;;; jidaikobo.init.el ends here
