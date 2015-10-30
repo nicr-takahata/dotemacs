@@ -42,7 +42,6 @@
 ;;; ------------------------------------------------------------
 ;;; hook and advice
 
-;; (setq debug-on-error nil)
 ;;; 選択範囲がある状態でshiftなしのカーソルが打鍵されたらリージョンを解除
 (when es-is-deactivate-region-by-cursor
 	;; regionの解除advice版 - Hookよりこちらのほうが軽い!?
@@ -59,11 +58,15 @@
 		"Deactivate Region by cursor."
 		(my-deactivate-region))
 
+	;; undo in regionしない
+	(defadvice undo-tree-undo (before deactivate-region activate)
+		"Deactivate Region when attempt to undo."
+		(my-deactivate-region))
+
 	;; リージョン解除関数
 	(defun my-deactivate-region ()
 		"Logic of deactivate region by cursor."
 		(when (and (region-active-p) (not (memq last-input-event '(S-left S-right S-down S-up))))
-			(message "%s" this-command)
 			(cond
 			 ((memq last-input-event '(right down))
 				(goto-char (region-end)))
@@ -101,7 +104,7 @@
 																 mouse-delete-other-windows
 																 contexual-close-window))
 				(progn
-					(message "close search windows.")
+					;; (message "close search windows.")
 					(when search-windowp
 						(progn
 							(select-window (get-buffer-window es-search-str-window))
