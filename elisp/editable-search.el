@@ -24,6 +24,11 @@
 	:group 'editable-search
 	:type 'boolean)
 
+(defcustom es-is-next-window-by-tab nil
+	"*Mac-like behavior."
+	:group 'editable-search
+	:type 'boolean)
+
 ;;; defvar
 (defvar es-rearch-window-foreground-color "White" "*Default 'White'.")
 (defvar es-re-rearch-window-foreground-color "White" "*Default 'White'.")
@@ -90,7 +95,7 @@
 ;;; 削除によってウィンドウ構成を変えようとしたら検索置換窓を閉じる
 (add-hook 'pre-command-hook 'es-delete-window-fn)
 (defun es-delete-window-fn ()
-	"About search mode windows."
+	"Delete search mode windows."
 	(when (and
 				 (editable-search-mode)
 				 (memq this-command '(delete-window
@@ -142,6 +147,16 @@
 																												(es-search-replace "re-rep-next")))
 	(define-key editable-re-search-mode-map (kbd "s-r") (lambda () (interactive)
 																												(es-search-replace "re-rep-here"))))
+
+;;; es-is-next-window-by-tab
+(when es-is-next-window-by-tab
+	(define-key editable-search-mode-map [tab] 'es-next-windows-dwim))
+(defun es-next-windows-dwim ()
+	"Next windows dwim."
+	(interactive)
+	(when (or (equal (selected-window) (get-buffer-window es-search-str-window))
+					(equal (selected-window) (get-buffer-window es-replace-str-window)))
+			(select-window (next-window))))
 
 ;;; ------------------------------------------------------------
 ;;; 検索置換用のマイナーモードを設定する

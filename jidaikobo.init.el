@@ -979,6 +979,7 @@
 ;;; editable-search
 (custom-set-variables
  '(es-is-use-super t)
+ '(es-is-next-window-by-tab t)
  '(es-is-deactivate-region-by-cursor t))
 (require 'editable-search)
 
