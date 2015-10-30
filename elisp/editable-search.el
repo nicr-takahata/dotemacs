@@ -88,31 +88,19 @@
 		(setq prev-line-num (line-number-at-pos))))
 
 ;;; 削除によってウィンドウ構成を変えようとしたら検索置換窓を閉じる
-(add-hook 'post-command-hook 'es-delete-window-fn)
+(add-hook 'pre-command-hook 'es-delete-window-fn)
 (defun es-delete-window-fn ()
 	"About search mode windows."
-	(when (editable-search-mode)
-		(let
-				((search-windowp (windowp (get-buffer-window es-search-str-window)))
-				 (replace-windowp (windowp (get-buffer-window es-replace-str-window))))
-			;; (message "this-command:%s" this-command)
-			(when (memq this-command '(delete-window
-																 kill-buffer
-																 kill-buffer-and-window
-																 delete-other-windows
-																 mouse-delete-window
-																 mouse-delete-other-windows
-																 contexual-close-window))
-				(progn
-					;; (message "close search windows.")
-					(when search-windowp
-						(progn
-							(select-window (get-buffer-window es-search-str-window))
-							(kill-buffer-and-window)))
-					(when replace-windowp
-						(progn
-							(select-window (get-buffer-window es-replace-str-window))
-							(kill-buffer-and-window))))))))
+	(when (and
+				 (editable-search-mode)
+				 (memq this-command '(delete-window
+															delete-other-windows
+															kill-buffer
+															kill-buffer-and-window
+															mouse-delete-window
+															mouse-delete-other-windows
+															my-delete-windows)))
+		(select-window es-target-window)))
 
 ;;; ------------------------------------------------------------
 ;;; key-binds
@@ -218,7 +206,8 @@
 											(equal (selected-window) (get-buffer-window es-replace-str-window)))
 						(setq es-target-window (selected-window)))
 					(editable-search-mode t)
-					(select-window (get-buffer-window es-search-str-window)))
+					(select-window (get-buffer-window es-search-str-window))
+					(mark-whole-buffer))
 			(progn
 				;; どちらかだけ開いていたら、もう片方を閉じる
 				(if is-search-window-exist (delete-window (get-buffer-window es-search-str-window)))
@@ -238,7 +227,8 @@
 				(when (require 'auto-complete) (global-auto-complete-mode t))
 				(set-window-dedicated-p (selected-window) t) ;変更を許さないウィンドウにする
 				(editable-search-mode t)
-				(if (string= mode "") (select-window (previous-window)))))
+				(if (string= mode "") (select-window (previous-window)))
+				(mark-whole-buffer)))
 		;; 検索文字列をセットする場合
 		(if (and (windowp (get-buffer-window es-search-str-window))
 						 (windowp (get-buffer-window es-replace-str-window))
