@@ -562,10 +562,18 @@
 ;; (bind-key* "s-t" 'elscreen-create)
 (bind-key* "s-t" (lambda () (interactive)
 															(elscreen-create)
-															(open-junk-file)))
+															(switch-to-buffer (generate-new-buffer "new"))))
 (bind-key* "s-w" (lambda () (interactive)
 															(cond
+															 ;; ウィンドウ構成が多ければまず他のウィンドウを消す
 															 ((not (one-window-p)) (delete-other-windows))
+															 ;; ウィンドウ構成がひとつでバッファに変更があれば破棄を確認する
+															 ((buffer-modified-p)
+																(when (yes-or-no-p "Save? (y:save, n:close anyway):")
+																	(call-interactively (save-buffer))
+																	(kill-buffer))
+																(elscreen-kill))
+															 ;; screenがひとつだったらkill-buffer
 															 ((elscreen-one-screen-p) (kill-buffer))
 															 (t (elscreen-kill-screen-and-buffers)))))
 
