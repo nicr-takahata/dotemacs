@@ -547,7 +547,6 @@
 ;;; タブ関連 - elscreen
 
 (require 'elscreen)
-(require 'open-junk-file)
 (elscreen-start)
 
 ;;; タブの先頭に[X]を表示しない
@@ -559,23 +558,37 @@
 ;;; キーバインド
 (bind-key* "<M-s-right>" 'elscreen-next)
 (bind-key* "<M-s-left>" 'elscreen-previous)
-;; (bind-key* "s-t" 'elscreen-create)
+
 (bind-key* "s-t" (lambda () (interactive)
 															(elscreen-create)
 															(switch-to-buffer (generate-new-buffer "new"))))
+
 (bind-key* "s-w" (lambda () (interactive)
 															(cond
 															 ;; ウィンドウ構成が多ければまず他のウィンドウを消す
 															 ((not (one-window-p)) (delete-other-windows))
 															 ;; ウィンドウ構成がひとつでバッファに変更があれば破棄を確認する
-															 ((buffer-modified-p)
-																(when (yes-or-no-p "Save? (y:save, n:close anyway):")
-																	(call-interactively (save-buffer))
-																	(kill-buffer))
-																(elscreen-kill))
+															 ((and (buffer-modified-p)
+																		 ;; read-onlyなら無視
+																		 buffer-read-only
+																		 ;; アスタリスクで始まるバッファ名も保存を尋ねない
+																		 (not (string=
+																					 (substring (buffer-name (current-buffer)) 0 1)
+																					 "*")))
+																(unless (yes-or-no-p "buffer is modified. Close anyway?")
+																	(call-interactively (save-buffer)))
+																(kill-buffer)
+																(unless (elscreen-one-screen-p) (elscreen-kill)))
 															 ;; screenがひとつだったらkill-buffer
 															 ((elscreen-one-screen-p) (kill-buffer))
+															 ;; ここまで来る条件てあるのかしら。とりあえずkill
 															 (t (elscreen-kill-screen-and-buffers)))))
+
+;;; ------------------------------------------------------------
+;;; open-junk-file
+
+(require 'open-junk-file)
+(setq open-junk-file-format "~/Desktop/%Y-%m-%d-%H%M%S.txt")
 
 ;;; ------------------------------------------------------------
 ;;; カーソル関連
