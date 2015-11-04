@@ -105,7 +105,9 @@
 															mouse-delete-window
 															mouse-delete-other-windows
 															my-delete-windows)))
-		(select-window es-target-window)))
+		(select-window es-target-window)
+		(unless (equal this-command 'my-delete-windows)
+			(delete-other-windows))))
 
 ;;; ------------------------------------------------------------
 ;;; key-binds
@@ -149,14 +151,14 @@
 																												(es-search-replace "re-rep-here"))))
 
 ;;; es-is-next-window-by-tab
-(when es-is-next-window-by-tab
-	(define-key editable-search-mode-map [tab] 'es-next-windows-dwim))
-(defun es-next-windows-dwim ()
-	"Next windows dwim."
-	(interactive)
-	(when (or (equal (selected-window) (get-buffer-window es-search-str-window))
-					(equal (selected-window) (get-buffer-window es-replace-str-window)))
-			(select-window (next-window))))
+;; (when es-is-next-window-by-tab
+;; 	(define-key editable-search-mode-map [tab] 'es-next-windows-dwim))
+;; (defun es-next-windows-dwim ()
+;; 	"Next windows dwim."
+;; 	(interactive)
+;; 	(when (or (equal (selected-window) (get-buffer-window es-search-str-window))
+;; 					(equal (selected-window) (get-buffer-window es-replace-str-window)))
+;; 			(select-window (next-window))))
 
 ;;; ------------------------------------------------------------
 ;;; 検索置換用のマイナーモードを設定する
@@ -219,31 +221,32 @@
 					;; キャレットが検索置換窓にあったら、target-windowを変更しない
 					(unless (or (equal (selected-window) (get-buffer-window es-search-str-window))
 											(equal (selected-window) (get-buffer-window es-replace-str-window)))
-						(setq es-target-window (selected-window)))
+						(setq es-target-window (selected-window))
+						(delete-other-windows))
 					(editable-search-mode t)
 					(select-window (get-buffer-window es-search-str-window))
 					(mark-whole-buffer))
-			(progn
-				;; どちらかだけ開いていたら、もう片方を閉じる
-				(if is-search-window-exist (delete-window (get-buffer-window es-search-str-window)))
-				(if is-replace-window-exist (delete-window (get-buffer-window es-replace-str-window)))
-				;; 検索と置換の窓を用意して、マイナーモードを変更する
-				(setq es-target-window (selected-window))
-				(editable-search-mode t)
-				(split-window-horizontally)
-				(select-window (next-window))
-				(switch-to-buffer es-search-str-window)
-				(when (require 'auto-complete) (global-auto-complete-mode t))
-				(set-window-dedicated-p (selected-window) t) ;変更を許さないウィンドウにする
-				(editable-search-mode t)
-				(split-window-vertically)
-				(select-window (next-window))
-				(switch-to-buffer es-replace-str-window)
-				(when (require 'auto-complete) (global-auto-complete-mode t))
-				(set-window-dedicated-p (selected-window) t) ;変更を許さないウィンドウにする
-				(editable-search-mode t)
-				(if (string= mode "") (select-window (previous-window)))
-				(mark-whole-buffer)))
+			;; どちらかだけ開いていたら、もう片方を閉じる
+			(if is-search-window-exist (delete-window (get-buffer-window es-search-str-window)))
+			(if is-replace-window-exist (delete-window (get-buffer-window es-replace-str-window)))
+			;; 検索と置換の窓を用意して、マイナーモードを変更する
+			(setq es-target-window (selected-window))
+			(delete-other-windows)
+			(editable-search-mode t)
+			(split-window-horizontally)
+			(select-window (next-window))
+			(switch-to-buffer es-search-str-window)
+			(when (require 'auto-complete) (global-auto-complete-mode t))
+			(set-window-dedicated-p (selected-window) t) ;変更を許さないウィンドウにする
+			(editable-search-mode t)
+			(split-window-vertically)
+			(select-window (next-window))
+			(switch-to-buffer es-replace-str-window)
+			(when (require 'auto-complete) (global-auto-complete-mode t))
+			(set-window-dedicated-p (selected-window) t) ;変更を許さないウィンドウにする
+			(editable-search-mode t)
+			(if (string= mode "") (select-window (previous-window)))
+			(mark-whole-buffer))
 		;; 検索文字列をセットする場合
 		(if (and (windowp (get-buffer-window es-search-str-window))
 						 (windowp (get-buffer-window es-replace-str-window))
@@ -261,7 +264,9 @@
 							 (goto-char (point-max))
 							 (delete-region (point-min) (point-max))
 							 (insert word)
-							 (select-window es-target-window)))))
+							 (select-window es-target-window)))
+	(when (< (frame-width) 110)
+			(set-frame-size (selected-frame) (+ (frame-width) 80) (frame-height)))))
 
 ;;; ------------------------------------------------------------
 ;;; 共通関数
@@ -568,6 +573,8 @@
 
 ;;; Todo:
 ;; editable-search-mode を抜けられない？ -1 じゃないの？
+;; delete-window hookをmy-delete前提でなくすこと。
+;; 普段は小さめの横幅で開き、cmd+shift+Wで大きさをトグルする。検索窓を開くときには大きめにフレームをリサイズする。
 ;; マルチファイル検索置換
 ;; 検索履歴
 ;; 検索置換のプリセット
