@@ -251,7 +251,11 @@
 (require 'anything-config)
 (require 'anything-gtags)
 (require 'anything-grep)
-(bind-key* "C-;" 'my-anything)
+(bind-key* "C-;" (lambda ()
+									 (interactive)
+									 (when (< (frame-width) 110)
+										 (set-frame-size (selected-frame) (+ (frame-width) 80) (frame-height)))
+									 (my-anything)))
 
 ;;; あればgtagsを起点にしてfindし、なければカレントディレクトリを対象にした情報源
 (defvar anything-c-source-find-by-gtags
@@ -409,7 +413,8 @@
 (setq normal-escape-enabled t)
 (define-key isearch-mode-map [escape] 'isearch-abort) ; isearch
 (define-key isearch-mode-map "\e" 'isearch-abort) ; \e seems to work better for terminals
-(bind-key* "<escape>" 'keyboard-escape-quit) ; everywhere else
+(bind-key* "<escape>" 'keyboard-quit) ; everywhere else
+(bind-key* "M-ESC ESC" 'keyboard-quit)
 (define-key minibuffer-inactive-mode-map [escape] 'keyboard-quit) ; minibuffer
 
 ;;; control+shift+cursorでウィンドウ内バッファ履歴
@@ -519,12 +524,15 @@
 	"Resize frame to jidaikobo's default."
 	(interactive)
 	(set-frame-position (selected-frame) 0 0)
-	(set-frame-size (selected-frame) 215 55))
+	;; 大きかったら小さく、小さかったら大きくする
+	(if (= (frame-width) 216)
+			(set-frame-size (selected-frame) 108 55)
+		(set-frame-size (selected-frame) 216 55)))
 (bind-key* "s-W" 'resize-selected-frame)
 
 ;;; フレーム初期値
 (add-to-list 'default-frame-alist '(alpha . (1.00 1.00)))
-(add-to-list 'default-frame-alist '(width . 215))
+(add-to-list 'default-frame-alist '(width . 108))
 (add-to-list 'default-frame-alist '(height . 55))
 (add-to-list 'default-frame-alist '(top . 0))
 (add-to-list 'default-frame-alist '(left . 0))
@@ -538,7 +546,6 @@
 	"Create new frame."
 	(interactive)
 	(switch-to-buffer-other-frame "*new1*")
-	;; あたらしいフレームでも行番号表示を維持したいが、うまくいかない？
 	(show-line-number))
 (bind-key* "s-N" 'create-new-frame)
 (add-hook 'after-make-frame-functions 'show-line-number)
@@ -564,7 +571,7 @@
 									 (elscreen-create)
 									 (switch-to-buffer (generate-new-buffer "new"))))
 
-;;; ウィンドウやスクリーンを閉じる
+;;; ウィンドウ/スクリーン/フレームを閉じる
 (bind-key* "s-w" 'my-delete-windows)
 (defun my-delete-windows ()
 	"Contexual delete windows."
@@ -575,7 +582,7 @@
 	 ;; ウィンドウ構成がひとつでバッファに変更があれば破棄を確認する
 	 ((and (buffer-modified-p)
 				 ;; read-onlyなら無視
-				 buffer-read-only
+				 (not buffer-read-only)
 				 ;; アスタリスクで始まるバッファ名も保存を尋ねない
 				 (not (string=
 							 (substring (buffer-name (current-buffer)) 0 1)
@@ -586,8 +593,22 @@
 		(unless (elscreen-one-screen-p) (elscreen-kill)))
 	 ;; screenがひとつだったらkill-buffer
 	 ((elscreen-one-screen-p) (kill-buffer))
+	 ;; もう閉じるバッファがない場合は、frameを閉じる
+	 ;; うまくいかないし、frameをそもそもあまりたくさん作らないので、使わないかも？
+	 ;; ((and (= 0 (length (eliminated-buffers))) (> (length (frame-list)) 1))
+	 ;; 		 (delete-frame))
 	 ;; ここまで来る条件てあるのかしら。とりあえずkill
 	 (t (elscreen-kill-screen-and-buffers))))
+
+;;; アスタリスクで終わるバッファ名を除いたリストを取得
+;;; とりあえず使っていないけど、何かの役に立つかもなので、取っておく。
+(defun eliminated-buffers ()
+	"Eleminate buffers."
+	(let (result
+				(tmp-buffers (buffer-list)))
+		(dolist (buf tmp-buffers result)
+			(unless (string= "*" (substring (format "%s" buf) -1 nil))
+				(add-to-list 'result buf)))))
 
 ;;; ------------------------------------------------------------
 ;;; open-junk-file
@@ -663,11 +684,11 @@
 (column-number-mode 1)
 
 ;; モードラインにカレントディレクトリを表示する
-(let ((ls (member 'mode-line-buffer-identification mode-line-format)))
-	(setcdr ls
-					(cons
-					 '(:eval (concat " (" (abbreviate-file-name default-directory) ")"))
-					 (cdr ls))))
+;; (let ((ls (member 'mode-line-buffer-identification mode-line-format)))
+;; 	(setcdr ls
+;; 					(cons
+;; 					 '(:eval (concat " (" (abbreviate-file-name default-directory) ")"))
+;; 					 (cdr ls))))
 
 ;;; よくあるマイナーモードを非表示
 ;; thx http://qiita.com/tadsan/items/8b5976682b955788c262
@@ -936,7 +957,15 @@
 	"Join multi lines."
 	(interactive)
 	(require 'editable-search)
-	(es-replace-region "\n\\|^>+ \\|\t" "" t))
+	(let ((beg (region-beginning))
+				(end (region-end)))
+		(goto-char beg)
+		(back-to-indentation)
+		(set-mark-command nil)
+		(goto-char end)
+		(goto-char (- (point) 1))
+		(end-of-line)
+		(es-replace-region "\n\\|^>+ \\|\t" "" t)))
 (bind-key* "<s-kp-divide>" 'join-multi-lines-to-one) ; cmd+/
 (bind-key* "s-/" 'join-multi-lines-to-one) ; cmd+/
 
@@ -969,9 +998,9 @@
 (setq file-name-coding-system 'utf-8-hfs)
 (setq locale-coding-system 'utf-8-hfs)
 (defun ucs-normalize-NFC-buffer ()
-  (interactive)
-  (ucs-normalize-NFC-region (point-min) (point-max))
-  )
+	(interactive)
+	(ucs-normalize-NFC-region (point-min) (point-max))
+	)
 (bind-key* "<C-x return u>" 'ucs-normalize-NFC-buffer)
 
 ;;; ------------------------------------------------------------
