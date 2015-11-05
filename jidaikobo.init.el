@@ -263,13 +263,14 @@
 		(candidates . (lambda ()
 										(let
 												((default-directory
-													 (with-current-buffer anything-current-buffer default-directory)))
+													 (with-current-buffer anything-current-buffer default-directory))
+												 (find-opt " -type f ! -name \"*.png\" ! -name \"*.ico\" ! -name \"*.gif\" ! -name \"*.jpg\""))
 											(cond
 											 ;; gtags-get-rootpathが返ったらgtagsをあてにして良い
 											 ((gtags-get-rootpath)
 												(split-string
 												 (shell-command-to-string
-													(concat "find " (directory-file-name (gtags-get-rootpath)) " -type f")) "\n"))
+													(concat "find " (directory-file-name (gtags-get-rootpath)) find-opt)) "\n"))
 											 ;; findの負荷が高すぎる場所だったらやりすごす
 											 ((member default-directory '("/" "~/"))
 												(split-string
@@ -277,10 +278,12 @@
 													(concat "ls " default-directory)) "\n"))
 											 ;; とりあえず自分以下のファイルをfind
 											 (t
-												(split-string (shell-command-to-string (concat "find " (directory-file-name default-directory) " -type f")) "\n"))))))
-		(type . file)
-		(requires-pattern . 3)
-		(delayed)))
+												(split-string
+												 (shell-command-to-string
+													(concat "find " (directory-file-name default-directory) find-opt)) "\n"))))))
+		(type . file)))
+		;; (requires-pattern . 3)
+		;; (delayed)))
 
 ;;; よく使うプロジェクトに対する操作
 (defvar anything-c-source-cd-to-projects
@@ -308,8 +311,7 @@
 	(interactive)
 	(anything-other-buffer
 	 '((anything-c-source-emacs-commands
-			anything-c-source-gtags-select
-			anything-c-source-find-by-gtags)
+			anything-c-source-gtags-select)
 		 anything-c-source-buffers-list
 		 anything-c-source-recentf
 		 anything-c-source-files-in-current-dir+
@@ -735,11 +737,6 @@
 (require 'auto-async-byte-compile)
 (setq auto-async-byte-compile-exclude-files-regexp "init.el")
 (add-hook 'emacs-lisp-mode-hook 'enable-auto-async-byte-compile-mode)
-
-;;; ------------------------------------------------------------
-;;; git
-
-
 
 ;;; ------------------------------------------------------------
 ;;; 釣り合いのとれる括弧のハイライト
