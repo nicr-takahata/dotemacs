@@ -68,7 +68,6 @@
 ;; M-x package-install RET mic-paren RET
 ;; M-x install-elisp-from-emacswiki RET eldoc-extension.el RET
 ;; M-x package-install RET gtags RET
-;; M-x package-install RET open-junk-file RET
 ;; M-x package-install RET bind-key RET
 
 ;;; Memo:
@@ -271,19 +270,12 @@
 												(split-string
 												 (shell-command-to-string
 													(concat "find " (directory-file-name (gtags-get-rootpath)) find-opt)) "\n"))
-											 ;; findの負荷が高すぎる場所だったらやりすごす
-											 ((member default-directory '("/" "~/"))
-												(split-string
-												 (shell-command-to-string
-													(concat "ls " default-directory)) "\n"))
-											 ;; とりあえず自分以下のファイルをfind
+											 ;; gtagsがないならls
 											 (t
 												(split-string
 												 (shell-command-to-string
-													(concat "find " (directory-file-name default-directory) find-opt)) "\n"))))))
+													(concat "ls " default-directory)) "\n"))))))
 		(type . file)))
-		;; (requires-pattern . 3)
-		;; (delayed)))
 
 ;;; よく使うプロジェクトに対する操作
 (defvar anything-c-source-cd-to-projects
@@ -611,12 +603,6 @@
 		(dolist (buf tmp-buffers result)
 			(unless (string= "*" (substring (format "%s" buf) -1 nil))
 				(add-to-list 'result buf)))))
-
-;;; ------------------------------------------------------------
-;;; open-junk-file
-
-(require 'open-junk-file)
-(setq open-junk-file-format "~/Desktop/%Y-%m-%d-%H%M%S.txt")
 
 ;;; ------------------------------------------------------------
 ;;; カーソル関連
