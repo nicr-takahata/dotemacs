@@ -223,6 +223,26 @@
 						 (setq indent-tabs-mode t)
 						 (setq c-basic-offset 2)))
 
+;;; テキストモードでもすこしカラーリングする
+;; thx http://lioon.net/how-to-customize-face-emacs
+(add-hook 'text-mode-hook
+					'(lambda()
+						 (font-lock-add-keywords nil '(("^■.+" . font-lock-comment-face)))))
+
+;;; ワイアフレームモード
+(easy-mmode-define-minor-mode kontiki-mode
+															"This is a Mode for Kontiki-Draft."
+															nil
+															" Kontiki-Draft")
+
+(add-hook 'kontiki-mode-hook
+					'(lambda()
+						 (font-lock-add-keywords nil '(("^//.+" . font-lock-comment-face)))
+						 (font-lock-add-keywords nil '(("<.+?>" . font-lock-keyword-face)))
+						 (font-lock-add-keywords nil '(("\\[memo:.+?\\]" . font-lock-builtin-face)))
+						 (font-lock-add-keywords nil '(("^[a-zA-Z_]+?:" . font-lock-function-name-face)))
+						 (font-lock-add-keywords nil '(("^\\*.+" . font-lock-function-name-face)))))
+
 ;;; ------------------------------------------------------------
 ;;; undo関連
 
@@ -451,7 +471,7 @@
 		 ((string= major-mode "web-mode")
 			(setq target "^\t*<h2"))
 		 (t
-			(setq target "^;;; ----+$\\|^■")))
+			(setq target "^;;; ----+$\\|^■\\|^///")))
 		(if (string= direction "prev")
 				(re-search-backward target)
 			(re-search-forward target))))
@@ -1013,7 +1033,6 @@
 
 ;;; ------------------------------------------------------------
 ;; 単語境界を細かく
-;; マウスのダブルクリックでシンボル単位の選択（アンダーバーもハイフンもまとめて選択したいのでたぶんシンボル単位の選択になる。Jedit Xで括弧の上でのダブルクリックの挙動についても。）もともとそうなってた。
 ;; 文字カテゴリの作成
 ;; http://smallsteps.seesaa.net/article/123661899.html
 ;; (define-category ?U "Upper case")
@@ -1025,5 +1044,6 @@
 ;; (add-to-list 'word-separating-categories (cons ?L ?U))
 
 
+;; test. my-math-mode, my first major mode
 
 ;;; jidaikobo.init.el ends here
