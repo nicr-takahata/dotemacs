@@ -41,6 +41,7 @@
 (defvar es-previous-replaced-str)
 (defvar es-previous-searced-direction nil)
 (defvar es-previous-direction)
+(defvar es-ignore-delete-window-hook nil)
 (defvar editable-search-mode-map (make-keymap))
 (defvar editable-re-search-mode-map (make-keymap))
 
@@ -98,6 +99,7 @@
 	"Delete search mode windows."
 	(when (and
 				 (editable-search-mode)
+				 (not es-ignore-delete-window-hook)
 				 (memq this-command '(delete-window
 															delete-other-windows
 															kill-buffer
@@ -210,6 +212,7 @@
 (defun es-enter-mode (mode)
 	"Split window for search and replace.  MODE [set-to-search|set-to-replace]."
 	(interactive)
+	(setq es-ignore-delete-window-hook t)
 	(let* ((is-search-window-exist (windowp (get-buffer-window es-search-str-window)))
 				 (is-replace-window-exist (windowp (get-buffer-window es-replace-str-window)))
 				 (beg (if mark-active (region-beginning)))
@@ -221,14 +224,13 @@
 					;; キャレットが検索置換窓にあったら、target-windowを変更しない
 					(unless (or (equal (selected-window) (get-buffer-window es-search-str-window))
 											(equal (selected-window) (get-buffer-window es-replace-str-window)))
-						(setq es-target-window (selected-window))
-						(delete-other-windows))
+						(setq es-target-window (selected-window)))
 					(editable-search-mode t)
 					(select-window (get-buffer-window es-search-str-window))
 					(mark-whole-buffer))
 			;; どちらかだけ開いていたら、もう片方を閉じる
-			(if is-search-window-exist (delete-window (get-buffer-window es-search-str-window)))
-			(if is-replace-window-exist (delete-window (get-buffer-window es-replace-str-window)))
+			(if (and is-search-window-exist (not is-replace-window-exist)) (delete-window (get-buffer-window es-search-str-window)))
+			(if (and is-replace-window-exist (not is-search-window-exist)) (delete-window (get-buffer-window es-replace-str-window)))
 			;; 検索と置換の窓を用意して、マイナーモードを変更する
 			(setq es-target-window (selected-window))
 			(delete-other-windows)
@@ -266,7 +268,8 @@
 							 (insert word)
 							 (select-window es-target-window)))
 	(when (< (frame-width) 110)
-			(set-frame-size (selected-frame) (+ (frame-width) 80) (frame-height)))))
+			(set-frame-size (selected-frame) (+ (frame-width) 80) (frame-height)))
+			(setq es-ignore-delete-window-hook nil)))
 
 ;;; ------------------------------------------------------------
 ;;; 共通関数
