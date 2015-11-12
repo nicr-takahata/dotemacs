@@ -302,12 +302,26 @@
 	'((name . "cd to projects")
 		(candidates . (lambda () (split-string (shell-command-to-string "find ~/Sites -maxdepth 1 -type d") "\n")))
 		(action . (("Change internal directory" . anything-change-internal-directory)
+							 ("Change internal directory to app if exists" . anything-change-internal-directory-to-app-if-exists)
+							 ("Change internal directory to locomo if exists" . anything-change-internal-directory-to-locomo-if-exists)
 							 ("Dired" . anything-project-dired)
 							 ("Generate gtags at project" . anything-generate-gtags-at-project)))))
 
 (defun anything-change-internal-directory (dir)
 	"Change internal directory at Sites.  DIR is path."
 	(cd dir))
+
+(defun anything-change-internal-directory-to-app-if-exists (dir)
+	"Change internal directory at Sites.  DIR is path."
+	(if (file-directory-p (concat dir "/fuel"))
+			(cd (concat dir "/fuel/app/"))
+		(cd dir)))
+
+(defun anything-change-internal-directory-to-locomo-if-exists (dir)
+	"Change internal directory at Sites.  DIR is path."
+	(if (file-directory-p (concat dir "/fuel"))
+			(cd (concat dir "/fuel/packages/locomo/"))
+		(cd dir)))
 
 (defun anything-project-dired (dir)
 	"Dired.  DIR is path."
@@ -991,6 +1005,34 @@
 (bind-key* "s-}" 'add-mail-quotation)
 (bind-key* "s-{" 'remove-mail-quotation)
 
+;;; ------------------------------------------------------------
+;;; eww
+;; thx http://futurismo.biz/archives/2950
+
+;; duckduckgoの設定
+(setq eww-search-prefix "https://duckduckgo.com/html/?kl=jp-jp&k1=-1&kc=1&kf=-1&q=")
+
+;; 画像表示
+(defun eww-disable-images ()
+	"Don't show images."
+	(interactive)
+	(setq-local shr-put-image-function 'shr-put-image-alt)
+	(eww-reload))
+(defun eww-enable-images ()
+	"Show images."
+	(interactive)
+	(setq-local shr-put-image-function 'shr-put-image)
+	(eww-reload))
+(defun shr-put-image-alt (spec alt &optional flags)
+	"Show alt instead of image.  SPEC, ALT, FLAGS."
+	(insert alt))
+;; はじめから非表示
+(defun eww-mode-hook--disable-image ()
+	"Don't show images."
+	(setq-local shr-put-image-function 'shr-put-image-alt))
+;; (add-hook 'eww-mode-hook 'eww-mode-hook--disable-image)
+
+;;; ------------------------------------------------------------
 ;; ucs-normalize-NFC-region で濁点分離を直す
 ;; M-x ucs-normalize-NFC-buffer または "C-x RET u" で、
 ;; バッファ全体の濁点分離を直します。
@@ -1001,10 +1043,16 @@
 (setq file-name-coding-system 'utf-8-hfs)
 (setq locale-coding-system 'utf-8-hfs)
 (defun ucs-normalize-NFC-buffer ()
+	"Normarize UTF-8."
 	(interactive)
 	(ucs-normalize-NFC-region (point-min) (point-max))
 	)
 (bind-key* "<C-x return u>" 'ucs-normalize-NFC-buffer)
+
+;;; ------------------------------------------------------------
+;; magit
+(setq my-emacsclient "/Applications/Emacs.app/Contents/MacOS/bin/emacsclient")
+(set-variable 'magit-emacsclient-executable (lambda () (if (file-exists-p my-emacsclient) nil)))
 
 ;;; ------------------------------------------------------------
 ;;; 編集可能な検索置換仕組み
@@ -1022,7 +1070,6 @@
 
 ;;; ------------------------------------------------------------
 ;;; Todo:
-;; 様子を見てctagsの導入
 ;; モードラインを表示しないウィンドウ
 ;; doctypeを見てのbrやタグの挿入
 ;; 単語境界をもうちょっと細かく
@@ -1042,8 +1089,5 @@
 ;; (modify-category-entry (cons ?a ?z) ?L)
 ;; 小文字に大文字が続く場合を単語境界とする。
 ;; (add-to-list 'word-separating-categories (cons ?L ?U))
-
-
-;; test. my-math-mode, my first major mode
 
 ;;; jidaikobo.init.el ends here
