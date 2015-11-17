@@ -34,7 +34,6 @@
 ;; wget http://www.ne.jp/asahi/alpha/kazu/pub/emacs/phpdoc.el
 ;; sudo port install global
 ;;
-;;
 ;;; @ emacs
 ;;; S式はC-x C-eで反映すること
 ;;; 下記コマンド類はM-;でコメントを外してからやるとよい
@@ -497,6 +496,8 @@
 (bind-key* "<s-down>" 'end-of-buffer) ; cmd+down
 (bind-key* "<s-left>" 'beginning-of-line) ; cmd+left
 (bind-key* "<s-right>" 'end-of-line) ; cmd+right
+(bind-key* "<C-up>" 'backward-paragraph) ; Control-down
+(bind-key* "<C-down>" 'forward-paragraph) ; Control-down
 
 ;; (bind-key* "M-right" 'forward-symbol)
 ;; (bind-key* "M-left" (lambda () (interactive) (forward-symbol -1)))
