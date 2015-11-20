@@ -434,22 +434,6 @@
 (global-set-key (kbd "s-A") 'region-angle-brackets) ; cmd+shift+a
 
 ;;; ------------------------------------------------------------
-;;; 選択範囲を[大文字|小文字|キャピタライズ]に
-(put 'upcase-region 'disabled nil)
-(put 'downcase-region 'disabled nil)
-(global-set-key (kbd "s-U") 'upcase-region)
-(global-set-key (kbd "s-L") 'downcase-region)
-(global-set-key (kbd "s-C") 'capitalize-region)
-
-;;; ------------------------------------------------------------
-;;現在バッファのファイルのフルパスを取得
-(defun get-current-path ()
-	"Get current file path."
-	(interactive)
-	(insert (or (buffer-file-name) (expand-file-name default-directory))))
-(global-set-key (kbd "M-s-k") 'get-current-path)
-
-;;; ------------------------------------------------------------
 ;;; Provide
 
 (provide 'jidaikobo-web-authoring-set)
