@@ -19,11 +19,6 @@
 	:group 'editable-search
 	:type 'boolean)
 
-(defcustom es-is-deactivate-region-by-cursor nil
-	"*Mac-like behavior."
-	:group 'editable-search
-	:type 'boolean)
-
 (defcustom es-is-next-window-by-tab nil
 	"*Mac-like behavior."
 	:group 'editable-search
@@ -47,51 +42,6 @@
 
 ;;; ------------------------------------------------------------
 ;;; hook and advice
-
-;;; 選択範囲がある状態でshiftなしのカーソルが打鍵されたらリージョンを解除
-(when es-is-deactivate-region-by-cursor
-	;; regionの解除advice版 - Hookよりこちらのほうが軽い!?
-	(defadvice previous-line (before deactivate-region activate)
-		"Deactivate Region by cursor."
-		(my-deactivate-region))
-	(defadvice next-line (before deactivate-region activate)
-		"Deactivate Region by cursor."
-		(my-deactivate-region))
-	(defadvice left-char (before deactivate-region activate)
-		"Deactivate Region by cursor."
-		(my-deactivate-region))
-	(defadvice right-char (before deactivate-region activate)
-		"Deactivate Region by cursor."
-		(my-deactivate-region))
-
-	;; undo in regionしない
-	(defadvice undo-tree-undo (before deactivate-region activate)
-		"Deactivate Region when attempt to undo."
-		(my-deactivate-region))
-
-	;; リージョン解除関数
-	(defun my-deactivate-region ()
-		"Logic of deactivate region by cursor."
-		(when (and (region-active-p) (not (memq last-input-event '(S-left S-right S-down S-up))))
-			(cond
-			 ((memq last-input-event '(right down))
-				(goto-char (region-end)))
-			 ((memq this-command '(left-char previous-line))
-				(goto-char (region-beginning))))
-			(deactivate-mark)))
-
-	;; おまけ。一行目と最終行での上下キーの振る舞い（行末と行頭へ）
-	(defvar prev-line-num (line-number-at-pos))
-	(add-hook 'post-command-hook 'es-goto-the-edge)
-	(defun es-goto-the-edge ()
-		"Go to the edge of the line."
-		;; (message "this-event:  %s\nthis-command:%s" last-input-event this-command)
-		(when (and (eq prev-line-num 1) (memq last-input-event '(up)))
-			(beginning-of-line))
-		(when (and (eq prev-line-num (count-lines 1 (point-max)))
-							 (memq last-input-event '(down)))
-			(end-of-line))
-		(setq prev-line-num (line-number-at-pos))))
 
 ;;; 削除によってウィンドウ構成を変えようとしたら検索置換窓を閉じる
 (add-hook 'pre-command-hook 'es-delete-window-fn)

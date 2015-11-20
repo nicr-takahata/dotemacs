@@ -263,6 +263,65 @@
 (bind-key* "<M-s-up>" (lambda () (interactive) (next-block "prev")))
 
 ;;; ------------------------------------------------------------
+;;; 選択範囲がある状態でshiftなしのカーソルが打鍵されたらリージョンを解除
+;; macふうの挙動だが、Emacsふうでないので、ちょっと様子見しつつ運用
+(defcustom is-deactivate-region-by-cursor t
+	"*Mac-like behavior."
+	:group 'Convenience
+	:type 'boolean)
+
+(when is-deactivate-region-by-cursor
+	;; regionの解除advice版 - Hookよりこちらのほうが軽い!?
+	(defadvice previous-line (before deactivate-region activate)
+		"Deactivate Region by cursor."
+		(my-deactivate-region))
+	(defadvice next-line (before deactivate-region activate)
+		"Deactivate Region by cursor."
+		(my-deactivate-region))
+	(defadvice left-char (before deactivate-region activate)
+		"Deactivate Region by cursor."
+		(my-deactivate-region))
+	(defadvice right-char (before deactivate-region activate)
+		"Deactivate Region by cursor."
+		(my-deactivate-region))
+
+	;; undo in regionしない
+	(defadvice undo-tree-undo (before deactivate-region activate)
+		"Deactivate Region when attempt to undo."
+		(my-deactivate-region))
+
+	;; リージョン解除関数
+	(defun my-deactivate-region ()
+		"Logic of deactivate region by cursor."
+		(when (and (region-active-p) (not (memq last-input-event '(S-left S-right S-down S-up))))
+			(cond
+			 ((memq last-input-event '(right down))
+				(goto-char (region-end)))
+			 ((memq this-command '(left-char previous-line))
+				(goto-char (region-beginning))))
+			(deactivate-mark))))
+
+;;; ------------------------------------------------------------
+;;; 一行目と最終行での上下キーの振る舞い（行末と行頭へ）
+(defcustom is-goto-the-edge t
+	"*Mac-like behavior."
+	:group 'Convenience
+	:type 'boolean)
+
+(when is-goto-the-edge
+	(defvar prev-line-num (line-number-at-pos))
+	(add-hook 'post-command-hook 'es-goto-the-edge)
+	(defun es-goto-the-edge ()
+		"Go to the edge of the line."
+		;; (message "this-event:  %s\nthis-command:%s" last-input-event this-command)
+		(when (and (eq prev-line-num 1) (memq last-input-event '(up)))
+			(beginning-of-line))
+		(when (and (eq prev-line-num (count-lines 1 (point-max)))
+							 (memq last-input-event '(down)))
+			(end-of-line))
+		(setq prev-line-num (line-number-at-pos))))
+
+;;; ------------------------------------------------------------
 ;;; 複数箇所選択と編集
 
 ;;; multiple-cursors and smartrep
@@ -1032,9 +1091,7 @@
 ;;; 編集可能な検索置換仕組み
 ;;; editable-search
 (custom-set-variables
- '(es-is-use-super t)
- '(es-is-next-window-by-tab t)
- '(es-is-deactivate-region-by-cursor t))
+ '(es-is-use-super t))
 (require 'editable-search)
 
 ;;; ------------------------------------------------------------
