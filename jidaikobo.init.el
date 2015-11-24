@@ -70,11 +70,15 @@
 ;; M-x package-install RET gtags RET
 ;; M-x package-install RET bind-key RET
 ;; M-x package-install RET magit RET
+;; M-x package-install RET gist RET
 ;; M-x package-install RET elscreen RET
+;; M-x auto-install-from-gist RET 467982 ; anything-gist.el
 
 ;;; Memo:
 ;; M-x install-packageで、入らないものがあるが、
 ;; M-x list-packagesで、C-sで探し、ページ移動の後installでなら入る。
+;; anything-gistは、auto-install-from-gistで入らないときは、
+;; https://gist.github.com/myuhe/467982 から持ってくる。
 
 ;;; Memo2:
 ;; tempbuf（idle buffer）を自動的にkill-bufferしてくれるelispだけど、
@@ -389,6 +393,8 @@
 (require 'anything-config)
 (require 'anything-gtags)
 (require 'anything-grep)
+(require 'anything-gist)
+
 (bind-key* "C-;" (lambda ()
 									 (interactive)
 									 (when (< (frame-width) 110)
@@ -495,7 +501,7 @@
 		 ;; anything-c-source-files-in-current-dir+
 		 anything-c-source-buffers-list
 		 anything-c-source-find-by-gtags
-		 anything-c-source-my-hosts
+		 ;; anything-c-source-my-hosts
 		 anything-c-source-cd-to-projects
 		 anything-c-source-bookmarks
 		 anything-c-source-recentf
@@ -1086,6 +1092,10 @@
 (set-variable 'magit-push-always-verify nil)
 (set-variable 'with-editor-show-usage nil)
 (bind-key* "M-s-m" 'magit-status)
+
+;;; ------------------------------------------------------------
+;; gist
+(require 'gist)
 
 ;;; ------------------------------------------------------------
 ;;; 編集可能な検索置換仕組み
