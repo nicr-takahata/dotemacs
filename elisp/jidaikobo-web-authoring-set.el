@@ -67,11 +67,11 @@
 (defun dump-values (type ip)
 	"Insert html intaractive.  TYPE is language.  IP is Global ip."
 	(interactive)
-	(let* ((beg (region-beginning))
-				 (end (region-end))
+	(let* ((beg (if mark-active (region-beginning) 0))
+				 (end (if mark-active (region-end) 0))
 				 (word (buffer-substring-no-properties beg end))
 				 ret)
-		(if mark-active () (setq word "$vals"))
+		(when (string= word "") (setq word "$vals"))
 		(cond
 		 ;; php
 		 ((string-equal type "php")
