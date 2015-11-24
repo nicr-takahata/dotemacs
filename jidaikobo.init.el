@@ -1087,8 +1087,8 @@
 
 ;;; ------------------------------------------------------------
 ;; magit
-(setq my-emacsclient "/Applications/Emacs.app/Contents/MacOS/bin/emacsclient")
-(set-variable 'magit-emacsclient-executable (lambda () (if (file-exists-p my-emacsclient) nil)))
+;; (setq my-emacsclient "/Applications/Emacs.app/Contents/MacOS/bin/emacsclient")
+;; (set-variable 'magit-emacsclient-executable (lambda () (if (file-exists-p my-emacsclient) nil)))
 (set-variable 'magit-push-always-verify nil)
 (set-variable 'with-editor-show-usage nil)
 (bind-key* "M-s-m" 'magit-status)
