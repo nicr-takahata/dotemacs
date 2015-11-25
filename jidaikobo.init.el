@@ -226,10 +226,6 @@
 ;;; ウィンドウ切り替え (opt+tab)
 (bind-key* "<M-tab>" 'other-window)
 
-;;; control+shift+cursorでウィンドウ内バッファ履歴
-(bind-key* "<C-S-left>" 'switch-to-prev-buffer)
-(bind-key* "<C-S-right>" 'switch-to-next-buffer)
-
 ;;; M-g or cmd+opt+j で指定行へジャンプ
 (bind-key* "M-g" 'goto-line)
 (bind-key* "M-s-j" 'goto-line)
@@ -238,6 +234,45 @@
 ;; コンテキストに応じたtabキー。auto-completeと共存
 (require 'smart-tab)
 (global-smart-tab-mode)
+
+;;; ------------------------------------------------------------
+;;; control+shift+cursorでウィンドウ内バッファ履歴
+;; thx http://pc12.2ch.net/test/read.cgi/unix/1261307488/
+(bind-key* "<C-S-left>" 'my-switch-to-prev-buffer)
+(bind-key* "<C-S-right>" 'my-switch-to-next-buffer)
+
+(defun my-switch-to-prev-buffer ()
+	"Previous working buffer history."
+	(interactive)
+	(let ((blist (buffer-list))
+				(prev-buffer)
+				(buffer))
+		(while blist
+			(unless (or (string= (substring (buffer-name (car blist)) 0 1) " ")
+							(string= (substring (buffer-name (car blist)) 0 1) "*")
+							(string= (substring (buffer-name (car blist)) 0 1) "+"))
+				(setq prev-buffer (car blist)))
+			(setq blist (cdr blist))
+			(setq buffer (car blist))
+			(if (eq (current-buffer) buffer)
+					(progn (switch-to-buffer prev-buffer t)
+								 (setq blist nil))))))
+
+(defun my-switch-to-next-buffer ()
+	"Next working buffer history."
+	(interactive)
+	(let ((blist (buffer-list))
+				(buffer))
+		(while blist
+			(setq buffer (car blist))
+			(setq blist (cdr blist))
+			(if (eq (current-buffer) buffer)
+					(progn (while (and blist (or (string= (substring (buffer-name (car blist)) 0 1) " ")
+																			 (string= (substring (buffer-name (car blist)) 0 1) "*")
+																			 (string= (substring (buffer-name (car blist)) 0 1) "+")))
+									 (setq blist (cdr blist)))
+								 (switch-to-buffer (car blist) t)
+								 (setq blist nil))))))
 
 ;;; ------------------------------------------------------------
 ;;; よく使うところに早く移動
@@ -491,6 +526,11 @@
 	"Generate gtags at project.  DIR is path."
 	(shell-command-to-string (concat "cd " dir " ; gtags -v")))
 
+;; 編集対象でないバッファを除外(必要な場合、switch-to-buffer)
+;; thx https://github.com/skkzsh/.emacs.d/blob/master/conf/anything-init.el
+(setq anything-c-boring-buffer-regexp
+			(rx "*" (+ not-newline) "*"))
+
 ;;; my-anything-for-files
 (defun my-anything-for-files ()
 	"Anything command included find by gtags."
@@ -563,12 +603,6 @@
 								(message "GTAGS successfully updated.")
 							(message "update GTAGS error with exit status %d" result))))))))
 (add-hook 'after-save-hook 'update-gtags)
-
-;;; ------------------------------------------------------------
-;; 編集対象でないバッファを除外(必要な場合、switch-to-buffer)
-;; thx https://github.com/skkzsh/.emacs.d/blob/master/conf/anything-init.el
-(setq anything-c-boring-buffer-regexp
-			(rx "*" (+ not-newline) "*"))
 
 ;;; ------------------------------------------------------------
 ;;; タブ関連 - elscreen
@@ -1149,5 +1183,16 @@
 ;; (modify-category-entry (cons ?a ?z) ?L)
 ;; 小文字に大文字が続く場合を単語境界とする。
 ;; (add-to-list 'word-separating-categories (cons ?L ?U))
+
+;; my-anything-c-source-buffers-list
+;; (defvar my-anything-c-source-buffers-list
+;; 	`((name . "Buffers")
+;; 		(candidates . (lambda ()
+;; 										(buffer-list)))))
+;; my-anything-c-source-buffers-list
+;; (buffer-list)
+;; anything-c-source-buffers-list
+;; (anything-c-buffer-list)
+;; (anything-c-highlight-buffers)
 
 ;;; jidaikobo.init.el ends here
