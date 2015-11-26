@@ -89,9 +89,9 @@
 ;;; ------------------------------------------------------------
 ;;; package類のロード等
 
-(defvar my-packages-initialize t "*Default t'.")
+(if (file-exists-p "~/.emacs.d/package.override.el")
+		(load "~/.emacs.d/package.override.el")
 
-(when my-packages-initialize
 ;;; load-pathの追加
 	(add-to-list 'load-path "~/.emacs.d/elisp")
 
