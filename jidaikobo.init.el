@@ -309,7 +309,7 @@
 	:group 'Convenience
 	:type 'boolean)
 
-(when is-deactivate-region-by-cursor
+(unless is-deactivate-region-by-cursor
 	;; regionの解除advice版 - Hookよりこちらのほうが軽い!?
 	(defadvice previous-line (before deactivate-region activate)
 		"Deactivate Region by cursor."
