@@ -1,2 +1,2 @@
 # dotemacs
-    git clone git@github.com:jidaikobo-shibata/dotemacs.git
+    git clone git@github.com:nicr-takahata/dotemacs.git
